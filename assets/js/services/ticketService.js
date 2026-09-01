@@ -1,6 +1,6 @@
 /**
  * Servicio de Procesamiento de Pagos y Emisión de Boletos
- * Traduce la función procesarPagoYGenerarTicket y obtenerComprasUsuario
+ * Conexión centralizada con Vercel Postgres (/api/tickets).
  */
 import { CONFIG } from '../config.js';
 
@@ -27,6 +27,21 @@ export const ticketService = {
       throw new Error('Los datos de la reserva no fueron recibidos correctamente.');
     }
 
+    // 1. Vercel Postgres API
+    try {
+      const res = await fetch('/api/tickets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(datosReserva)
+      });
+      if (res.ok) {
+        const ticket = await res.json();
+        this.saveLastTicket(ticket);
+        return ticket;
+      }
+    } catch (e) {}
+
+    // 2. Apps Script
     if (typeof google !== 'undefined' && google.script && google.script.run) {
       return new Promise((resolve, reject) => {
         google.script.run
@@ -39,7 +54,7 @@ export const ticketService = {
       });
     }
 
-    // Modo local / Base de datos persistente en localStorage
+    // 3. Modo Local fallback
     const now = new Date();
     const ticketId = 'TCK-' + Math.random().toString(36).substring(2, 11).toUpperCase();
     const fechaStr = now.toISOString().split('T')[0];
@@ -72,9 +87,7 @@ export const ticketService = {
       const orders = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.ORDERS) || '[]');
       orders.unshift(ticket);
       localStorage.setItem(CONFIG.STORAGE_KEYS.ORDERS, JSON.stringify(orders));
-    } catch (e) {
-      console.warn('Error al persistir orden en localStorage:', e);
-    }
+    } catch (e) {}
 
     this.saveLastTicket(ticket);
     return ticket;

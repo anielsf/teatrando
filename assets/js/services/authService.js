@@ -1,6 +1,6 @@
 /**
  * Servicio de Autenticación, Gestión de Sesiones, Roles y Planes
- * Traduce las funciones registrarUsuario, autenticarUsuario y autenticarPorSSO
+ * Conecta con Vercel Postgres (/api/auth) o almacenamiento local.
  */
 import { CONFIG } from '../config.js';
 import { store } from '../state/store.js';
@@ -28,6 +28,23 @@ export const authService = {
   async login(email, password) {
     const emailNorm = this.normalizeEmail(email);
 
+    // 1. Intentar Vercel Postgres API
+    try {
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'login', email: emailNorm, password })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.usuario) {
+          this.setSession(data.usuario);
+          return { success: true, user: data.usuario };
+        }
+      }
+    } catch (e) {}
+
+    // 2. Intentar Apps Script
     if (typeof google !== 'undefined' && google.script && google.script.run) {
       return new Promise((resolve) => {
         google.script.run
@@ -44,7 +61,7 @@ export const authService = {
       });
     }
 
-    // Modo local / Base de datos en localStorage
+    // 3. Modo Local fallback
     const users = this.getLocalUsers();
     const found = users.find((u) => u.email === emailNorm && u.password === password);
 
@@ -67,6 +84,25 @@ export const authService = {
     const emailNorm = this.normalizeEmail(email);
     const nombreLimpio = (nombre || '').toString().trim();
 
+    // 1. Intentar Vercel Postgres API
+    try {
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'register', nombre: nombreLimpio, email: emailNorm, password })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.usuario) {
+          this.setSession(data.usuario);
+          return { success: true, user: data.usuario };
+        } else {
+          return { success: false, message: data.message || 'Error en registro' };
+        }
+      }
+    } catch (e) {}
+
+    // 2. Apps Script
     if (typeof google !== 'undefined' && google.script && google.script.run) {
       return new Promise((resolve) => {
         google.script.run
@@ -83,7 +119,7 @@ export const authService = {
       });
     }
 
-    // Modo local
+    // 3. Local fallback
     const users = this.getLocalUsers();
     if (users.some((u) => u.email === emailNorm)) {
       return { success: false, message: 'El correo electrónico ya se encuentra registrado.' };
@@ -142,9 +178,7 @@ export const authService = {
     store.setState({ user });
     try {
       localStorage.setItem(CONFIG.STORAGE_KEYS.SESSION, JSON.stringify(user));
-    } catch (e) {
-      console.warn('No se pudo guardar la sesión en localStorage:', e);
-    }
+    } catch (e) {}
   },
 
   logout() {

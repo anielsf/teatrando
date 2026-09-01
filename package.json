@@ -1,0 +1,13 @@
+{
+  "name": "teatrando",
+  "version": "1.0.0",
+  "description": "Plataforma SaaS de Boletería y Gestión Teatral",
+  "main": "index.html",
+  "type": "module",
+  "scripts": {
+    "start": "python server.py"
+  },
+  "dependencies": {
+    "@vercel/postgres": "^0.10.0"
+  }
+}
