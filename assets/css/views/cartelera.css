@@ -1,0 +1,69 @@
+/* Cartelera y Catálogo */
+.img-cartelera {
+  width: 100%;
+  height: 250px;
+  object-fit: cover;
+}
+
+.card-title {
+  font-family: var(--font-serif);
+  font-weight: 700;
+}
+
+.cartelera-perforacion {
+  position: relative;
+  height: 0;
+  border-top: 1px dashed var(--gold-dim);
+}
+
+.cartelera-perforacion::before,
+.cartelera-perforacion::after {
+  content: '';
+  position: absolute;
+  top: -9px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--bg);
+}
+
+.cartelera-perforacion::before {
+  left: -9px;
+}
+
+.cartelera-perforacion::after {
+  right: -9px;
+}
+
+.cartelera-cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.cartelera-titulos {
+  min-width: 0;
+}
+
+.cartelera-titulos .card-title {
+  margin-bottom: 0.15rem;
+}
+
+.cartelera-titulos h6 {
+  margin-bottom: 0;
+}
+
+.precio-ticket {
+  flex-shrink: 0;
+  text-align: right;
+  line-height: 1.15;
+}
+
+.precio-ticket .precio-usd {
+  font-size: 0.98rem;
+}
+
+.precio-ticket .precio-ves {
+  font-size: 0.68rem;
+}

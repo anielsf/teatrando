@@ -1,0 +1,107 @@
+/* Vistas SPA */
+.vista {
+  display: none;
+}
+
+.vista.activa {
+  display: block;
+  animation: fadeIn 0.35s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Barra de navegación */
+.navbar-teatro {
+  background: linear-gradient(180deg, #1c0d12 0%, #150809 100%);
+  border-bottom: 1px solid var(--line);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+}
+
+.marca-teatro {
+  font-family: var(--font-serif);
+  font-weight: 800;
+  font-size: 1.5rem;
+  letter-spacing: 0.06em;
+  color: var(--gold-bright) !important;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.marca-teatro .mascara {
+  font-size: 1.3rem;
+}
+
+.tasa-bcv-badge {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: var(--panel-2);
+  border: 1px solid var(--gold-dim);
+  color: var(--gold-bright);
+}
+
+/* Hero */
+.hero-teatro {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  padding: 4rem 2rem;
+  text-align: center;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(233, 200, 118, 0.18), transparent 55%),
+    repeating-linear-gradient(90deg, #200f14 0 60px, #26131a 60px 120px);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.hero-teatro h2 {
+  font-size: 2.6rem;
+  font-weight: 800;
+  color: var(--gold-bright);
+  margin-bottom: 0.5rem;
+}
+
+.hero-teatro p {
+  color: var(--cream-dim);
+  font-size: 1.05rem;
+  margin-bottom: 0;
+}
+
+.hero-teatro .eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-bottom: 0.75rem;
+  display: block;
+}
+
+.titulo-seccion {
+  font-weight: 700;
+  color: var(--cream);
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 0.6rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.titulo-seccion::before {
+  content: '';
+  width: 4px;
+  height: 1.3rem;
+  background: var(--gold);
+  border-radius: 2px;
+  display: inline-block;
+}

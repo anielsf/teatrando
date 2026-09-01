@@ -1,0 +1,71 @@
+/* Tablas y Gestión de Administración */
+.table {
+  color: var(--cream);
+}
+
+.table-dark, table.dataTable {
+  --bs-table-bg: var(--panel);
+  --bs-table-color: var(--cream);
+  --bs-table-border-color: var(--line);
+  --bs-table-striped-bg: var(--panel-2);
+  --bs-table-striped-color: var(--cream);
+  --bs-table-hover-bg: var(--panel-2);
+  --bs-table-hover-color: var(--cream);
+  background-color: var(--panel) !important;
+  color: var(--cream) !important;
+}
+
+.table-dark td, .table-dark th, table.dataTable td, table.dataTable th {
+  border-color: var(--line) !important;
+  color: var(--cream);
+}
+
+.dataTables_wrapper .dataTables_paginate .page-link {
+  background: var(--panel-2);
+  border-color: var(--line);
+  color: var(--cream-dim);
+}
+
+.dataTables_wrapper .dataTables_info,
+.dataTables_wrapper .dataTables_filter label {
+  color: var(--muted);
+}
+
+.tabla-compras th {
+  color: var(--gold-bright);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  border-color: var(--line) !important;
+}
+
+.tabla-compras td {
+  vertical-align: middle;
+  border-color: var(--line) !important;
+}
+
+.compra-id {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--gold-bright);
+}
+
+.compra-obra {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--cream);
+}
+
+.compra-meta {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.compra-monto {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--success);
+  font-size: 0.92rem;
+}

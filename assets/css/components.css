@@ -1,0 +1,218 @@
+/* Formularios */
+.form-control, .form-select {
+  background-color: var(--panel) !important;
+  border: 1px solid var(--line) !important;
+  color: var(--cream) !important;
+  font-family: var(--font-sans);
+}
+
+.form-control::placeholder {
+  color: var(--muted);
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--gold) !important;
+  box-shadow: 0 0 0 3px rgba(201, 162, 75, 0.18) !important;
+}
+
+label.campo-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--gold-bright);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.35rem;
+  display: block;
+}
+
+/* Botones */
+.btn-nav {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--cream-dim);
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all var(--transition-fast);
+}
+
+.btn-nav:hover {
+  border-color: var(--gold);
+  color: var(--gold-bright);
+  background: rgba(201, 162, 75, 0.08);
+}
+
+.btn-admin {
+  background: var(--gold);
+  border: 1px solid var(--gold);
+  color: #241016;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.btn-admin:hover {
+  background: var(--gold-bright);
+  color: #241016;
+}
+
+.btn-primary {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #241016;
+  font-weight: 700;
+}
+
+.btn-primary:hover, .btn-primary:active {
+  background: var(--gold-bright) !important;
+  border-color: var(--gold-bright) !important;
+  color: #241016 !important;
+}
+
+.btn-outline-secondary, .btn-secondary {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--cream-dim);
+}
+
+.btn-outline-secondary:hover, .btn-secondary:hover {
+  background: var(--panel-2);
+  border-color: var(--gold-dim);
+  color: var(--gold-bright);
+}
+
+.btn-success {
+  background: var(--success);
+  border-color: var(--success);
+  font-weight: 700;
+}
+
+.btn-outline-success {
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.btn-outline-success:hover {
+  background: var(--success);
+  color: #0e1a0a;
+}
+
+.btn-danger {
+  background: var(--danger);
+  border-color: var(--danger);
+}
+
+.btn-outline-danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* Tarjetas */
+.card {
+  background-color: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--cream);
+  border-radius: 14px;
+  overflow: hidden;
+  position: relative;
+  transition: transform var(--transition-base), box-shadow var(--transition-base), border-color var(--transition-base);
+}
+
+.badge-genero {
+  display: inline-block;
+  font-size: 0.72rem;
+  color: var(--gold-bright);
+  border: 1px solid var(--gold-dim);
+  border-radius: 20px;
+  padding: 2px 10px;
+  margin-bottom: 0.5rem;
+}
+
+/* Modales personalizados */
+.modal-teatro-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 4, 6, 0.72);
+  backdrop-filter: blur(2px);
+  z-index: 2000;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.modal-teatro-overlay.activo {
+  display: flex;
+  animation: fadeIn 0.2s ease;
+}
+
+.modal-teatro {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--gold-dim);
+  border-radius: 16px;
+  max-width: 380px;
+  width: 100%;
+  padding: 1.7rem 1.5rem 1.4rem;
+  box-shadow: var(--shadow);
+  text-align: center;
+  animation: modalPop 0.2s ease;
+}
+
+@keyframes modalPop {
+  from {
+    transform: scale(0.94);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.modal-teatro::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 4px;
+  border-radius: 16px 16px 0 0;
+  background: linear-gradient(90deg, var(--gold-dim), var(--gold-bright), var(--gold-dim));
+}
+
+.modal-teatro.modal-error::before {
+  background: linear-gradient(90deg, var(--danger), #e08a85, var(--danger));
+}
+
+.modal-teatro.modal-exito::before {
+  background: linear-gradient(90deg, var(--success), #a8d98d, var(--success));
+}
+
+.modal-teatro .modal-icono {
+  font-size: 1.9rem;
+  display: inline-block;
+  margin-bottom: 0.5rem;
+}
+
+.modal-teatro .modal-titulo {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: var(--gold-bright);
+  margin-bottom: 0.5rem;
+}
+
+.modal-teatro .modal-mensaje {
+  color: var(--cream-dim);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+  word-break: break-word;
+}
+
+.modal-teatro .modal-botones {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.modal-teatro .modal-botones .btn {
+  min-width: 110px;
+}

@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teatrando · Plataforma de Boletería y Gestión Teatral</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;1,600&family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+
+  <!-- Hojas de estilo modulares de Teatrando -->
+  <link rel="stylesheet" href="assets/css/variables.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/views/cartelera.css">
+  <link rel="stylesheet" href="assets/css/views/checkout.css">
+  <link rel="stylesheet" href="assets/css/views/admin.css">
+  <link rel="stylesheet" href="assets/css/views/auth.css">
+</head>
+<body>
+
+  <!-- Barra de navegación global -->
+  <nav id="navbar-principal" class="navbar navbar-expand-lg navbar-teatro mb-4" style="display: none;">
+    <div class="container">
+      <a class="navbar-brand marca-teatro" href="#" data-navigate="vista-inicio">
+        <span class="mascara">🎭</span> TEATRANDO
+      </a>
+      <div class="d-flex align-items-center flex-wrap gap-2">
+        <span class="tasa-bcv-badge" id="indicador-tasa">Tasa BCV: cargando…</span>
+        <button class="btn btn-nav btn-sm" data-navigate="vista-cartelera">Cartelera</button>
+        <button class="btn btn-nav btn-sm" data-navigate="vista-mi-cuenta">Mi cuenta</button>
+        <button class="btn btn-nav btn-sm" id="btn-nav-ultima-entrada" title="Ver la última entrada comprada en este navegador">Mi última entrada</button>
+        <button class="btn btn-nav btn-sm" data-navigate="vista-ayuda">Ayuda</button>
+        <button class="btn btn-admin btn-sm" id="btn-nav-admin" data-navigate="vista-admin" style="display: none;">Admin</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 1. Vista de Inicio (Hero + Destacados) -->
+  <main>
+    <section id="vista-inicio" class="vista container">
+      <div class="hero-teatro mb-4">
+        <span class="eyebrow">Cartelera teatral · Caracas</span>
+        <h2>Bienvenido a Teatrando</h2>
+        <p>Reserva tu butaca, elige tu asiento y recibe tu entrada al instante.</p>
+      </div>
+
+      <div id="buscador-rapido-filtros" class="mb-4">
+        <label class="campo-label" for="input-busqueda-rapida">Buscar espectáculo</label>
+        <input type="text" id="input-busqueda-rapida" class="form-control" placeholder="Título, género o sala…">
+      </div>
+
+      <div class="row">
+        <div class="col-md-12" id="seccion-proximos-eventos">
+          <h4 class="titulo-seccion pb-2">Próximos eventos</h4>
+          <div id="contenedor-inicio-eventos" class="row my-3"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Vista de Cartelera con Filtros -->
+    <section id="vista-cartelera" class="vista container">
+      <h3 class="titulo-seccion mb-3 pb-2">Cartelera teatral</h3>
+      <div class="filtros mb-4 row g-2">
+        <div class="col-md-3">
+          <label class="campo-label" for="filtro-genero">Género</label>
+          <select id="filtro-genero" class="form-select">
+            <option value="">Todos los géneros</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="campo-label" for="filtro-sala">Sala</label>
+          <select id="filtro-sala" class="form-select">
+            <option value="">Todas las salas</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="campo-label" for="filtro-fecha">Fecha de función</label>
+          <input type="date" id="filtro-fecha" class="form-control">
+        </div>
+        <div class="col-md-3">
+          <label class="campo-label" for="filtro-precio">Rango de precio</label>
+          <select id="filtro-precio" class="form-select">
+            <option value="">Todos los precios</option>
+            <option value="0-10">Hasta $10</option>
+            <option value="10-25">$10 a $25</option>
+            <option value="25-999">Más de $25</option>
+          </select>
+        </div>
+      </div>
+      <div class="row" id="contenedor-carteleras">
+        <div class="text-center mt-5">
+          <div class="spinner-border" style="color:var(--gold)"></div>
+          <p class="mt-2 text-muted">Cargando carteleras…</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Vista de Detalle de la Obra -->
+    <section id="vista-detalle-obra" class="vista container">
+      <button class="btn btn-sm btn-outline-secondary mb-3" data-navigate="vista-cartelera">← Volver a cartelera</button>
+      <div class="row">
+        <div class="col-md-4">
+          <img id="detalle-img" class="img-fluid rounded border" style="border-color: var(--line) !important;" src="" alt="Póster de la obra">
+        </div>
+        <div class="col-md-8">
+          <h2 id="detalle-titulo"></h2>
+          <h5 id="detalle-funcion" style="color: var(--info);"></h5>
+          <span class="badge-genero" id="detalle-genero"></span>
+          <span class="badge-genero" id="detalle-sala"></span>
+          <h4 class="mt-2 precio-usd" id="detalle-precio"></h4>
+          <div id="sinopsis-y-reparto" class="mt-3">
+            <h5 class="titulo-seccion pb-2">Sinopsis</h5>
+            <p id="detalle-sinopsis" class="text-muted"></p>
+            <h5 class="titulo-seccion pb-2">Reparto</h5>
+            <p id="detalle-reparto" class="text-muted"></p>
+          </div>
+          <div id="calendario-funciones" class="mt-3">
+            <p><strong>Fecha:</strong> <span id="detalle-fecha"></span> &nbsp;|&nbsp; <strong>Hora:</strong> <span id="detalle-hora"></span></p>
+          </div>
+          <button class="btn btn-primary btn-lg mt-3" id="btn-iniciar-compra-detalle">Comprar entradas</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. Flujo de Checkout Wizard (5 Pasos) -->
+    <!-- Paso 1: Butacas -->
+    <section id="vista-checkout-asientos" class="vista container">
+      <h3 class="text-center mb-4">Paso 1 · Selección de butaca</h3>
+      <div class="escenario-etiqueta p-2 text-center rounded mb-4 mx-auto" style="max-width: 300px;">Escenario / Tarima</div>
+      <div id="matriz-asientos" class="d-flex flex-wrap justify-content-center mx-auto" style="max-width: 500px;"></div>
+      <div class="leyenda-asientos mt-4">
+        <span><span class="punto punto-ocupada"></span>Ocupada</span>
+        <span><span class="punto punto-disponible"></span>Disponible</span>
+        <span><span class="punto punto-seleccionada"></span>Seleccionada</span>
+      </div>
+      <div class="text-center mt-4">
+        <button class="btn btn-secondary me-2" data-navigate="vista-detalle-obra">Cancelar</button>
+        <button class="btn btn-primary" id="btn-avanzar-resumen">Continuar al resumen</button>
+      </div>
+    </section>
+
+    <!-- Paso 2: Resumen -->
+    <section id="vista-checkout-resumen" class="vista container" style="max-width: 600px;">
+      <h3 class="mb-4">Paso 2 · Resumen del pedido</h3>
+      <div class="card p-3 mb-4">
+        <h5 id="resumen-obra"></h5>
+        <hr style="border-color: var(--line);">
+        <div class="d-flex justify-content-between"><span class="text-muted">Sala:</span> <strong id="resumen-sala"></strong></div>
+        <div class="d-flex justify-content-between"><span class="text-muted">Asiento seleccionado:</span> <strong id="resumen-asiento"></strong></div>
+        <div class="d-flex justify-content-between"><span class="text-muted">Fecha y hora:</span> <strong id="resumen-fecha"></strong></div>
+        <div class="d-flex justify-content-between mt-3 fs-5"><span class="text-muted">Total a pagar:</span> <strong class="precio-usd" id="resumen-total"></strong></div>
+      </div>
+      <button class="btn btn-secondary w-100 mb-2" data-navigate="vista-checkout-asientos">Modificar asiento</button>
+      <button class="btn btn-primary w-100" id="btn-avanzar-registro">Confirmar y continuar</button>
+    </section>
+
+    <!-- Paso 3: Identificación del Cliente -->
+    <section id="vista-checkout-registro" class="vista container" style="max-width: 500px;">
+      <h3 class="mb-4">Paso 3 · Identificación del cliente</h3>
+      <div class="card p-4">
+        <div id="checkout-invitado-box">
+          <label class="campo-label" for="checkout-nombre">Nombre completo</label>
+          <input type="text" id="checkout-nombre" class="form-control mb-3" placeholder="Ej: María Pérez">
+          <label class="campo-label" for="checkout-email">Correo electrónico</label>
+          <input type="email" id="checkout-email" class="form-control mb-3" placeholder="Ej: maria@correo.com">
+        </div>
+        <button class="btn btn-primary w-100" id="btn-validar-identificacion">Ir a pago seguro</button>
+      </div>
+    </section>
+
+    <!-- Paso 4: Pago Seguro Multimoneda -->
+    <section id="vista-checkout-pago" class="vista container" style="max-width: 500px;">
+      <h3 class="mb-4">Paso 4 · Pago seguro</h3>
+      <div class="card p-4">
+        <div class="mb-3">
+          <label class="campo-label" for="checkout-ref-pago">Número de referencia de pago móvil / transferencia</label>
+          <input type="text" id="checkout-ref-pago" class="form-control" placeholder="Ej: 987654321" autocomplete="off">
+        </div>
+        <button class="btn btn-success w-100 py-2 fs-5" id="btn-pagar">Procesar pago</button>
+      </div>
+    </section>
+
+    <!-- Paso 5: Emisión de Boleto Digital -->
+    <section id="vista-checkout-confirmacion" class="vista container" style="max-width: 620px;">
+      <h3 class="mb-4 text-center" style="color: var(--success);">Paso 5 · Tu entrada</h3>
+      <div id="contenido-ticket"></div>
+      <div class="text-center mt-4">
+        <button class="btn btn-outline-success w-100" id="btn-finalizar-compra">Volver al inicio</button>
+      </div>
+    </section>
+
+    <!-- 5. Área de Cliente / Autenticación -->
+    <section id="vista-mi-cuenta" class="vista activa container">
+      <!-- Panel de Usuario Autenticado -->
+      <div id="bloque-sesion-usuario" style="display: none;">
+        <h3 class="titulo-seccion mb-4 pb-2">Área de cliente</h3>
+        <div class="d-flex justify-content-between align-items-center mb-4 caja-sesion p-3">
+          <div>
+            <h4 id="user-display-name" class="mb-0"></h4>
+            <small id="user-display-email" class="text-muted"></small>
+          </div>
+          <button class="btn btn-outline-danger btn-sm" id="btn-cerrar-sesion">Cerrar sesión</button>
+        </div>
+        <h4 class="titulo-seccion pb-2">Historial de compras y facturación</h4>
+        <div id="contenedor-historial-compras" class="mt-3"></div>
+
+        <!-- Panel opcional para estadísticas y métricas (Productores) -->
+        <div id="panel-estadisticas" class="mt-4" style="display: none;">
+          <h4 class="titulo-seccion pb-2">Métricas y Rendimiento</h4>
+          <p class="text-muted">Panel de control disponible para Grupos Teatrales y Administradores.</p>
+        </div>
+      </div>
+
+      <!-- Módulo de Autenticación para Visitantes -->
+      <div id="bloque-auth" class="card p-4 mx-auto mt-4" style="max-width: 450px;">
+        <!-- Auth: Inicio -->
+        <div id="auth-inicio" class="vista-auth">
+          <h4 class="mb-3 text-center">Acceso a Teatrando</h4>
+          <button class="btn btn-primary w-100 mb-2" onclick="cambiarVistaAuth('auth-login')">Ya estoy registrado (Iniciar Sesión)</button>
+          <button class="btn btn-outline-secondary w-100 mb-4" onclick="cambiarVistaAuth('auth-registro-opciones')">Crear cuenta nueva</button>
+          <hr style="border-color: var(--line);">
+          <p class="text-muted text-center small mb-2">¿Eres un Grupo Teatral o Productor?</p>
+          <button class="btn btn-sm btn-nav w-100" onclick="cambiarVistaAuth('auth-manual')">Solicitar alta de productor</button>
+        </div>
+
+        <!-- Auth: Login -->
+        <div id="auth-login" class="vista-auth" style="display: none;">
+          <h4 class="mb-3">Iniciar sesión</h4>
+          <form id="form-login">
+            <label class="campo-label" for="login-email">Correo electrónico</label>
+            <input type="email" id="login-email" class="form-control mb-3" required>
+            <label class="campo-label" for="login-password">Contraseña</label>
+            <input type="password" id="login-password" class="form-control mb-3" required>
+            <button type="submit" class="btn btn-primary w-100 mb-2">Ingresar</button>
+            <button type="button" class="btn btn-nav w-100" onclick="cambiarVistaAuth('auth-inicio')">Volver</button>
+          </form>
+        </div>
+
+        <!-- Auth: Opciones de Registro -->
+        <div id="auth-registro-opciones" class="vista-auth" style="display: none;">
+          <h4 class="mb-3">Método de registro</h4>
+          <button class="btn btn-primary w-100 mb-2" onclick="cambiarVistaAuth('auth-registro-local')">Registro con Correo y Contraseña</button>
+          <button class="btn btn-nav w-100 mt-2" onclick="cambiarVistaAuth('auth-inicio')">Volver</button>
+        </div>
+
+        <!-- Auth: Formulario de Registro Local -->
+        <div id="auth-registro-local" class="vista-auth" style="display: none;">
+          <h4 class="mb-3">Registro de Cliente</h4>
+          <form id="form-registro">
+            <label class="campo-label" for="reg-nombre">Nombre completo</label>
+            <input type="text" id="reg-nombre" class="form-control mb-3" required>
+            <label class="campo-label" for="reg-email">Correo electrónico</label>
+            <input type="email" id="reg-email" class="form-control mb-3" required>
+            <label class="campo-label" for="reg-password">Contraseña</label>
+            <input type="password" id="reg-password" class="form-control mb-3" required>
+            <button type="submit" class="btn btn-success w-100 mb-2">Crear cuenta</button>
+            <button type="button" class="btn btn-nav w-100" onclick="cambiarVistaAuth('auth-registro-opciones')">Volver</button>
+          </form>
+        </div>
+
+        <!-- Auth: Registro Manual Productor -->
+        <div id="auth-manual" class="vista-auth" style="display: none;">
+          <h4 class="mb-3">Solicitud de Grupo Teatral</h4>
+          <p class="text-muted small">Contacte al administrador del sistema para el alta de salas, grupos y permisos de productor.</p>
+          <button class="btn btn-nav w-100 mt-3" onclick="cambiarVistaAuth('auth-inicio')">Volver al inicio</button>
+        </div>
+      </div>
+
+      <!-- Búsqueda de Invitados (Módulo Administrador / Soporte) -->
+      <div id="bloque-busqueda-invitado" class="card p-4 mt-4" style="display: none;">
+        <h4 class="mb-1">Búsqueda de Boletos por Correo (Módulo Administrativo)</h4>
+        <p class="text-muted small mb-3">Consulta de boletos asociados a correos de compradores no registrados.</p>
+        <div class="row g-2 align-items-end">
+          <div class="col-md-8">
+            <label class="campo-label" for="lookup-email">Correo electrónico del comprador</label>
+            <input type="email" id="lookup-email" class="form-control" placeholder="tu@correo.com">
+          </div>
+          <div class="col-md-4">
+            <button class="btn btn-primary w-100" id="btn-buscar-invitado">Buscar compras</button>
+          </div>
+        </div>
+        <div id="contenedor-historial-invitado" class="mt-3"></div>
+      </div>
+    </section>
+
+    <!-- 6. Vista de Ayuda y Soporte -->
+    <section id="vista-ayuda" class="vista container">
+      <h3 class="titulo-seccion mb-4 pb-2">Soporte y ayuda</h3>
+      <div class="accordion" id="accordionAyuda">
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+              ¿Cómo accedo a mis entradas compradas?
+            </button>
+          </h2>
+          <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#accordionAyuda">
+            <div class="accordion-body">
+              Puedes ver y reimprimir tus entradas en cualquier momento ingresando a la sección "Mi cuenta" o usando el botón rápido "Mi última entrada".
+            </div>
+          </div>
+        </div>
+        <div class="accordion-item mt-2">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+              Política de reembolsos y cambios
+            </button>
+          </h2>
+          <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#accordionAyuda">
+            <div class="accordion-body">
+              Los cambios y reembolsos están sujetos a notificación con un mínimo de 24 horas previas al inicio de la función en la sala correspondiente.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. Panel de Administración CRUD -->
+    <section id="vista-admin" class="vista container">
+      <h2 class="titulo-seccion mb-4 pb-2">Administración de cartelera</h2>
+      <div class="card p-4 mb-4">
+        <form id="form-obra">
+          <input type="hidden" id="admin-id">
+          <input type="hidden" id="admin-foto-actual">
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="campo-label" for="admin-obra">Nombre de la obra</label>
+              <input type="text" id="admin-obra" class="form-control" placeholder="Ej: Hamlet" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="campo-label" for="admin-funcion">Nombre de la función</label>
+              <input type="text" id="admin-funcion" class="form-control" placeholder="Ej: Función de gala" required>
+            </div>
+            <div class="col-md-3 mb-3">
+              <label class="campo-label" for="admin-genero">Género</label>
+              <input type="text" id="admin-genero" class="form-control" placeholder="Drama, comedia…" required>
+            </div>
+            <div class="col-md-3 mb-3">
+              <label class="campo-label" for="admin-sala">Sala</label>
+              <input type="text" id="admin-sala" class="form-control" placeholder="Sala principal" required>
+            </div>
+            <div class="col-md-3 mb-3">
+              <label class="campo-label" for="admin-fecha">Fecha de función</label>
+              <input type="date" id="admin-fecha" class="form-control" required>
+            </div>
+            <div class="col-md-3 mb-3">
+              <label class="campo-label" for="admin-hora">Hora de función</label>
+              <input type="time" id="admin-hora" class="form-control" required>
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="campo-label" for="admin-precio">Precio (USD)</label>
+              <input type="number" step="0.01" min="0" id="admin-precio" class="form-control" placeholder="Ej: 15.00" required>
+            </div>
+            <div class="col-md-8 mb-3">
+              <label class="campo-label" for="admin-foto">Póster de la obra</label>
+              <input type="file" id="admin-foto" class="form-control" accept="image/*">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="campo-label" for="admin-sinopsis">Sinopsis</label>
+              <textarea id="admin-sinopsis" class="form-control" rows="2" placeholder="Breve resumen de la obra"></textarea>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="campo-label" for="admin-reparto">Reparto</label>
+              <textarea id="admin-reparto" class="form-control" rows="2" placeholder="Actores principales"></textarea>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-success" id="btn-guardar-obra">Guardar registro</button>
+          <button type="button" class="btn btn-secondary" id="btn-limpiar-admin">Limpiar</button>
+        </form>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-dark table-striped table-hover align-middle" id="tabla-datos-admin">
+          <thead>
+            <tr>
+              <th>Foto</th>
+              <th>Obra / Función</th>
+              <th>Género / Sala</th>
+              <th>Horario</th>
+              <th>Precio</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-admin"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal de avisos y confirmaciones teatrales -->
+  <div id="modal-teatro-overlay" class="modal-teatro-overlay">
+    <div id="modal-teatro" class="modal-teatro">
+      <span class="modal-icono" id="modal-teatro-icono">🎭</span>
+      <div class="modal-titulo" id="modal-teatro-titulo">Aviso</div>
+      <div class="modal-mensaje" id="modal-teatro-mensaje"></div>
+      <div class="modal-botones" id="modal-teatro-botones"></div>
+    </div>
+  </div>
+
+  <!-- Librerías JS Externas -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Script Principal de la Aplicación Modular -->
+  <script type="module" src="assets/js/app.js"></script>
+</body>
+</html>
