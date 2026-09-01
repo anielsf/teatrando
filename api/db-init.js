@@ -1,15 +1,18 @@
-import { sql } from '@vercel/postgres';
+import pg from 'pg';
+const { Pool } = pg;
 
-/**
- * Inicializador y migrador automático de tablas para Vercel Postgres
- * Crea las tablas carteleras, interacciones, usuarios y tickets con el esquema exacto.
- */
+function getPool() {
+  const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL || process.env.SUPABASE_DB_URL;
+  if (!connectionString) throw new Error('No se encontró la variable POSTGRES_URL en Environment Variables.');
+  return new Pool({ connectionString, ssl: { rejectUnauthorized: false } });
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
+  const pool = getPool();
 
   try {
-    // 1. Tabla Carteleras
-    await sql`
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS carteleras (
         id VARCHAR(64) PRIMARY KEY,
         obra VARCHAR(255) NOT NULL,
@@ -24,10 +27,9 @@ export default async function handler(req, res) {
         reparto TEXT,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
-    `;
+    `);
 
-    // 2. Tabla Interacciones (Likes y Comentarios)
-    await sql`
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS interacciones (
         id SERIAL PRIMARY KEY,
         id_obra VARCHAR(64) NOT NULL,
@@ -35,10 +37,9 @@ export default async function handler(req, res) {
         valor TEXT,
         fecha_registro TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
-    `;
+    `);
 
-    // 3. Tabla Usuarios
-    await sql`
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS usuarios (
         id VARCHAR(64) PRIMARY KEY,
         nombre VARCHAR(255) NOT NULL,
@@ -48,10 +49,9 @@ export default async function handler(req, res) {
         plan VARCHAR(64) DEFAULT 'Gratuito',
         fecha_registro TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
-    `;
+    `);
 
-    // 4. Tabla Tickets
-    await sql`
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS tickets (
         ticket_id VARCHAR(64) PRIMARY KEY,
         id_usuario VARCHAR(64),
@@ -71,27 +71,25 @@ export default async function handler(req, res) {
         hora_emision VARCHAR(32),
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
-    `;
+    `);
 
-    // 5. Semilla inicial si está vacía
-    const countShows = await sql`SELECT count(*) FROM carteleras;`;
-    if (parseInt(countShows.rows[0].count, 10) === 0) {
-      await sql`
+    const countResult = await pool.query('SELECT count(*) FROM carteleras;');
+    if (parseInt(countResult.rows[0].count, 10) === 0) {
+      await pool.query(`
         INSERT INTO carteleras (id, obra, funcion, fecha, hora, imagen, precio_usd, genero, sala, sinopsis, reparto) VALUES
         ('1', 'Hamlet', 'Función de Gala', '2026-09-15', '19:30', 'https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?auto=format&fit=crop&w=600&q=80', 25.00, 'Drama', 'Sala Rios Reyna', 'La clásica tragedia de William Shakespeare sobre la venganza y la traición.', 'Carlos Cruz, Marisa Román, Héctor Manrique'),
         ('2', 'El Fantasma de la Ópera', 'Viernes Estelar', '2026-09-18', '20:00', 'https://images.unsplash.com/photo-1469488865564-c2de10f69f96?auto=format&fit=crop&w=600&q=80', 35.00, 'Musical', 'Teatro Municipal', 'Un misterioso prodigio musical habita en el laberinto debajo de la Ópera de París.', 'Giannina Pavone, Beto Baralt, Humberto Baralt'),
         ('3', 'TOC TOC', 'Domingo de Risas', '2026-09-20', '18:00', 'https://images.unsplash.com/photo-1514306191717-452ec28c7814?auto=format&fit=crop&w=600&q=80', 15.00, 'Comedia', 'Teatro Trasnocho', 'Seis pacientes que padecen TOC se conocen en la sala de espera de un psiquiatra.', 'Sócrates Serrano, Sonia Villamizar, Laureano Olivarez');
-      `;
+      `);
     }
 
+    await pool.end();
     return res.status(200).json({
       success: true,
-      message: 'Base de datos de Teatrando inicializada exitosamente en Vercel Postgres.'
+      message: 'Base de datos de Teatrando inicializada exitosamente.'
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    await pool.end().catch(() => {});
+    return res.status(500).json({ success: false, error: error.message });
   }
 }
