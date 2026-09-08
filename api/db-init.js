@@ -3,9 +3,13 @@ import pg from 'pg';
 const { Pool } = pg;
 
 function getPool() {
-  const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL || process.env.SUPABASE_DB_URL;
-  if (!connectionString) throw new Error('No se encontró la variable POSTGRES_URL en Environment Variables.');
-  return new Pool({ connectionString, ssl: { rejectUnauthorized: false } });
+  const rawUrl = process.env.POSTGRES_URL || process.env.DATABASE_URL || process.env.SUPABASE_DB_URL;
+  if (!rawUrl) throw new Error('No se encontró la variable POSTGRES_URL en Environment Variables.');
+  const connectionString = rawUrl.replace(/[?&]sslmode=[^&]+/g, '');
+  return new Pool({
+    connectionString,
+    ssl: { rejectUnauthorized: false }
+  });
 }
 
 export default async function handler(req, res) {
