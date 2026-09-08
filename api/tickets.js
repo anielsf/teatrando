@@ -1,16 +1,4 @@
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-import pg from 'pg';
-const { Pool } = pg;
-
-function getPool() {
-  const rawUrl = process.env.POSTGRES_URL || process.env.DATABASE_URL || process.env.SUPABASE_DB_URL;
-  if (!rawUrl) throw new Error('No se encontró POSTGRES_URL.');
-  const connectionString = rawUrl.replace(/[?&]sslmode=[^&]+/g, '');
-  return new Pool({
-    connectionString,
-    ssl: { rejectUnauthorized: false }
-  });
-}
+import { getPool } from './_db.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
