@@ -1,22 +1,17 @@
 /**
  * Configuración global y esquema de base de datos de Teatrando
- * Adaptado para Supabase en Vercel, roles y planes de suscripción
+ * Adaptado para Supabase (Postgres), nuevos roles y planes de suscripción
  */
-
-// 1. Configuración de Supabase para el Frontend
-// (Como es Vanilla JS sin empaquetador, tus credenciales públicas van directamente aquí)
-export const SUPABASE_URL = "https://muqhnbmaqprokczltdrj.supabase.co"; 
-export const SUPABASE_ANON_KEY = "sb_publishable_BgxJ27gmu6KQk-8QH_6MIQ_OGVlg6TW";
-
-// 2. Objeto de configuración global único (Unificado)
 export const CONFIG = {
   APP_NAME: 'Teatrando',
   SLOGAN: 'Vive la escena',
   VERSION: '2.0.0',
-  API_URL: '/api',
-  DEFAULT_CURRENCY: 'VES',
   DEFAULT_BCV_RATE: 798.33,
   TOTAL_SEATS_PER_ROOM: 40,
+
+  // Credenciales del proyecto Supabase
+  SUPABASE_URL: 'https://muqhnbmaqprokczltdrj.supabase.co',
+  SUPABASE_ANON_KEY: 'sb_publishable_BgxJ27gmu6KQk-8QH_6MIQ_OGVlg6TW',
 
   // Nuevos Roles del Sistema
   ROLES: {
