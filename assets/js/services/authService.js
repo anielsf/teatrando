@@ -6,6 +6,31 @@
  */
 import { CONFIG } from '../config.js';
 import { store } from '../state/store.js';
+// assets/js/services/authService.js
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../config.js';
+
+// Inicializar el cliente de Supabase usando las constantes del frontend
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+export const authService = {
+    async login(email, password) {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password,
+        });
+        if (error) throw error;
+        return data;
+    },
+    
+    async register(email, password) {
+        const { data, error } = await supabase.auth.signUp({
+            email: email,
+            password: password,
+        });
+        if (error) throw error;
+        return data;
+    }
+};
 
 export const authService = {
   normalizeEmail(email) {
