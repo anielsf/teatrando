@@ -169,22 +169,36 @@ export const carteleraView = {
   },
 
   /**
-   * Renderiza el apartado de Información del Teatro y Estadísticas
+   * Renderiza el apartado de Información del Teatro y Estadísticas con gráficas de barras
+   * Datos basados en: Microteatral Caracas — Semanas 1 y 2
    */
   async renderTheaterInfoAndStats() {
     const container = document.getElementById('apartado-teatro-estadisticas');
     if (!container) return;
 
-    const data = await apiService.getTeatroInfo();
-    const t = data.teatro;
-    const s = data.estadisticas;
+    let data, t, s;
+    try {
+      data = await apiService.getTeatroInfo();
+      t = data.teatro;
+      s = data.estadisticas;
+    } catch (e) {
+      t = {
+        nombre: 'Teatro Municipal de Caracas',
+        ubicacion: 'Esq. Municipal, Caracas',
+        aforo: 14000,
+        historia: 'El Teatro Municipal de Caracas es el teatro más antiguo y emblemático del país. Fundado en 1881, ha sido escenario de las más importantes manifestaciones culturales venezolanas.',
+        servicios: ['Estacionamiento', 'Cafetería Teatro', 'Acceso para personas con discapacidad', 'Taquilla presencial', 'Tienda de souvenirs'],
+        normas: ['Puntualidad absoluta', 'Sin fotografías con flash', 'Silenciar dispositivos móviles', 'No se permite el ingreso con alimentos', 'Código de vestimenta formal sugerido']
+      };
+      s = { porcentajeOcupacion: 91.25, butacasVendidas: 5203, calificacionCriticos: 4.94 };
+    }
 
-    const serviciosList = Array.isArray(t.servicios) 
-      ? t.servicios 
+    const serviciosList = Array.isArray(t.servicios)
+      ? t.servicios
       : (t.servicios || '').split(',').map(item => item.trim()).filter(Boolean);
 
-    const normasList = Array.isArray(t.normas) 
-      ? t.normas 
+    const normasList = Array.isArray(t.normas)
+      ? t.normas
       : (t.normas || '').split(',').map(item => item.trim()).filter(Boolean);
 
     container.innerHTML = `
@@ -197,29 +211,29 @@ export const carteleraView = {
           </div>
           <div class="col-md-4 text-md-end mt-3 mt-md-0">
             <button class="btn btn-outline-warning btn-sm" id="btn-ver-suscripciones-teatro">
-              ⭐ Ver Membresías & Planes VIP
+              ⭐ Ver Membresías &amp; Planes VIP
             </button>
           </div>
         </div>
 
-        <!-- Dashboard de Estadísticas Teatrales -->
+        <!-- Dashboard de Estadísticas Numéricas -->
         <div class="row g-3 mb-4 text-center">
           <div class="col-6 col-md-3">
             <div class="p-3 rounded h-100" style="background: #1c1c1c; border: 1px solid #2a2a2a;">
-              <div class="text-muted small text-uppercase">Aforo Oficial</div>
-              <div class="fs-3 fw-bold text-light">${t.aforo} <span class="fs-6 text-muted">butacas</span></div>
+              <div class="text-muted small text-uppercase">Salas Activas</div>
+              <div class="fs-3 fw-bold text-light">22 <span class="fs-6 text-muted">salas</span></div>
             </div>
           </div>
           <div class="col-6 col-md-3">
             <div class="p-3 rounded h-100" style="background: #1c1c1c; border: 1px solid #2a2a2a;">
-              <div class="text-muted small text-uppercase">Ocupación Promedio</div>
-              <div class="fs-3 fw-bold text-success">${s.porcentajeOcupacion || 91.25}%</div>
+              <div class="text-muted small text-uppercase">Capacidad Semanal</div>
+              <div class="fs-3 fw-bold text-success">14.000 <span class="fs-6 text-muted">esp.</span></div>
             </div>
           </div>
           <div class="col-6 col-md-3">
             <div class="p-3 rounded h-100" style="background: #1c1c1c; border: 1px solid #2a2a2a;">
-              <div class="text-muted small text-uppercase">Entradas Vendidas</div>
-              <div class="fs-3 fw-bold text-warning">${s.butacasVendidas || 5280}</div>
+              <div class="text-muted small text-uppercase">Entradas S2</div>
+              <div class="fs-3 fw-bold text-warning">2.707 <span class="fs-6 text-muted">+8.45%</span></div>
             </div>
           </div>
           <div class="col-6 col-md-3">
@@ -230,10 +244,49 @@ export const carteleraView = {
           </div>
         </div>
 
-        <!-- Pestañas de Historia, Servicios y Normas -->
+        <!-- GRÁFICAS DE BARRAS — Microteatral Caracas -->
+        <h5 class="titulo-seccion pb-2 mb-3">📊 Estadísticas — Microteatral Caracas (Semanas 1 y 2)</h5>
+        <div class="row g-4 mb-4">
+
+          <!-- Gráfica 1: Entradas por día / Tipo de Promoción -->
+          <div class="col-md-6">
+            <div class="p-3 rounded" style="background: #1a1a1a; border: 1px solid #2a2a2a;">
+              <h6 class="text-warning mb-3">🎟️ Entradas Vendidas por Día (Semana 2)</h6>
+              <div style="position: relative; height: 220px;">
+                <canvas id="chart-entradas-dia"></canvas>
+              </div>
+              <p class="text-muted small mt-2 mb-0">Miércoles (3x1), Jueves–Viernes–Domingo (2x1+Sixpacks), Sábado (Tarifa Plana \$3.51)</p>
+            </div>
+          </div>
+
+          <!-- Gráfica 2: Top 6 Salas por Asistencia -->
+          <div class="col-md-6">
+            <div class="p-3 rounded" style="background: #1a1a1a; border: 1px solid #2a2a2a;">
+              <h6 class="text-warning mb-3">🏆 Top 6 Salas por Asistencia (S2)</h6>
+              <div style="position: relative; height: 220px;">
+                <canvas id="chart-top-salas"></canvas>
+              </div>
+              <p class="text-muted small mt-2 mb-0">Sala 7 lidera con 515 espectadores en la segunda semana.</p>
+            </div>
+          </div>
+
+          <!-- Gráfica 3: Semana 1 vs Semana 2 por Género -->
+          <div class="col-md-12">
+            <div class="p-3 rounded" style="background: #1a1a1a; border: 1px solid #2a2a2a;">
+              <h6 class="text-warning mb-3">🎭 Comedia vs Drama — Semana 1 vs Semana 2</h6>
+              <div style="position: relative; height: 200px;">
+                <canvas id="chart-genero-semanas"></canvas>
+              </div>
+              <p class="text-muted small mt-2 mb-0">Drama cayó un 22.25% en la segunda semana, mientras Comedia mantiene el 64% de la cartelera (14 de 22 salas).</p>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Historia, Servicios y Normas -->
         <div class="row g-4">
           <div class="col-md-6">
-            <h5 class="titulo-seccion pb-2">Historia & Arquitectura</h5>
+            <h5 class="titulo-seccion pb-2">Historia &amp; Arquitectura</h5>
             <p class="text-muted small" style="line-height: 1.7;">
               ${t.historia || 'Templo de las artes escénicas de relevancia patrimonial.'}
             </p>
@@ -241,7 +294,7 @@ export const carteleraView = {
           <div class="col-md-3">
             <h5 class="titulo-seccion pb-2">Servicios al Público</h5>
             <ul class="list-unstyled text-muted small">
-              ${serviciosList.map(s => `<li class="mb-1">✓ ${s}</li>`).join('')}
+              ${serviciosList.map(sv => `<li class="mb-1">✓ ${sv}</li>`).join('')}
             </ul>
           </div>
           <div class="col-md-3">
@@ -257,6 +310,149 @@ export const carteleraView = {
     const btnSub = document.getElementById('btn-ver-suscripciones-teatro');
     if (btnSub) {
       btnSub.onclick = () => openSubscriptionModal();
+    }
+
+    // Inicializar gráficas con Chart.js después de que el DOM esté listo
+    this._initCharts();
+  },
+
+  _initCharts() {
+    if (typeof Chart === 'undefined') return;
+
+    const chartDefaults = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1e1e1e',
+          borderColor: '#D4AF37',
+          borderWidth: 1,
+          titleColor: '#D4AF37',
+          bodyColor: '#ccc'
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#aaa', font: { size: 11 } },
+          grid: { color: '#2a2a2a' }
+        },
+        y: {
+          ticks: { color: '#aaa', font: { size: 11 } },
+          grid: { color: '#2a2a2a' },
+          beginAtZero: true
+        }
+      }
+    };
+
+    // --- Gráfica 1: Entradas por día ---
+    const ctxDia = document.getElementById('chart-entradas-dia');
+    if (ctxDia) {
+      // Destruir instancia previa si existe
+      if (ctxDia._chartInstance) ctxDia._chartInstance.destroy();
+      ctxDia._chartInstance = new Chart(ctxDia, {
+        type: 'bar',
+        data: {
+          labels: ['Miér (3x1)', 'Jue (2x1)', 'Vie (2x1)', 'Sáb (T.Plana)', 'Dom (2x1)'],
+          datasets: [{
+            label: 'Entradas vendidas',
+            data: [745, 449, 540, 480, 493],
+            backgroundColor: [
+              'rgba(212,175,55,0.85)',
+              'rgba(212,175,55,0.6)',
+              'rgba(212,175,55,0.6)',
+              'rgba(87,195,109,0.75)',
+              'rgba(212,175,55,0.6)'
+            ],
+            borderColor: '#D4AF37',
+            borderWidth: 1,
+            borderRadius: 4
+          }]
+        },
+        options: {
+          ...chartDefaults,
+          plugins: {
+            ...chartDefaults.plugins,
+            legend: { display: false }
+          }
+        }
+      });
+    }
+
+    // --- Gráfica 2: Top 6 salas ---
+    const ctxSalas = document.getElementById('chart-top-salas');
+    if (ctxSalas) {
+      if (ctxSalas._chartInstance) ctxSalas._chartInstance.destroy();
+      ctxSalas._chartInstance = new Chart(ctxSalas, {
+        type: 'bar',
+        data: {
+          labels: ['Sala 7', 'Sala 19', 'Sala 21', 'Sala 6', 'Sala 15', 'Sala 9'],
+          datasets: [{
+            label: 'Espectadores',
+            data: [515, 424, 420, 393, 376, 311],
+            backgroundColor: [
+              'rgba(212,175,55,0.9)',
+              'rgba(212,175,55,0.7)',
+              'rgba(212,175,55,0.65)',
+              'rgba(212,175,55,0.6)',
+              'rgba(212,175,55,0.55)',
+              'rgba(212,175,55,0.5)'
+            ],
+            borderColor: '#D4AF37',
+            borderWidth: 1,
+            borderRadius: 4
+          }]
+        },
+        options: chartDefaults
+      });
+    }
+
+    // --- Gráfica 3: Género por semana (agrupado) ---
+    const ctxGenero = document.getElementById('chart-genero-semanas');
+    if (ctxGenero) {
+      if (ctxGenero._chartInstance) ctxGenero._chartInstance.destroy();
+      ctxGenero._chartInstance = new Chart(ctxGenero, {
+        type: 'bar',
+        data: {
+          labels: ['Semana 1', 'Semana 2'],
+          datasets: [
+            {
+              label: 'Comedia',
+              data: [2132, 2424],
+              backgroundColor: 'rgba(212,175,55,0.8)',
+              borderColor: '#D4AF37',
+              borderWidth: 1,
+              borderRadius: 4
+            },
+            {
+              label: 'Drama',
+              data: [364, 283],
+              backgroundColor: 'rgba(87,195,109,0.7)',
+              borderColor: '#57C36D',
+              borderWidth: 1,
+              borderRadius: 4
+            },
+            {
+              label: 'Otros (Terror/Erótico)',
+              data: [0, 0],
+              backgroundColor: 'rgba(99,102,241,0.6)',
+              borderColor: '#6366f1',
+              borderWidth: 1,
+              borderRadius: 4
+            }
+          ]
+        },
+        options: {
+          ...chartDefaults,
+          plugins: {
+            ...chartDefaults.plugins,
+            legend: {
+              display: true,
+              labels: { color: '#ccc', font: { size: 11 } }
+            }
+          }
+        }
+      });
     }
   },
 
@@ -294,7 +490,7 @@ export const carteleraView = {
     // Renderizar críticas y comentarios
     this.renderCriticasDetalle(show);
 
-    // Botón Comprar
+    // Botón Comprar (va al wizard de checkout)
     const btnComprar = document.getElementById('btn-iniciar-compra-detalle');
     if (btnComprar) {
       btnComprar.onclick = () => {

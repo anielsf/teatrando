@@ -1,6 +1,6 @@
-/**
- * Capa de Integración y Servicios de Base de Datos para Teatrando
- * Conexión centralizada con MySQL (XAMPP / PHP) y fallback local.
+﻿/**
+ * Capa de integración con Supabase a través de funciones serverless de Vercel
+ * Elimina toda dependencia de localStorage y PHP/XAMPP.
  */
 import { CONFIG } from '../config.js';
 import { store } from '../state/store.js';
@@ -19,182 +19,89 @@ export const apiService = {
     return url;
   },
 
-  /**
-   * Obtiene la lista de carteleras centralizada desde MySQL / Backend
-   */
   async getCarteleras() {
-    // 1. Intentar endpoint PHP / MySQL en XAMPP
-    try {
-      const res = await fetch('api/carteleras.php');
-      if (res.ok) {
-        const list = await res.json();
-        if (Array.isArray(list) && list.length > 0) {
-          const processed = list.map((s) => ({
-            ...s,
-            imagen: this.normalizeImageUrl(s.imagen)
-          }));
-          store.setState({ shows: processed });
-          return processed;
-        }
-      }
-    } catch (e) {}
-
-    // 2. Intentar endpoint serverless Vercel si existe
     try {
       const res = await fetch('/api/carteleras');
       if (res.ok) {
         const list = await res.json();
-        if (Array.isArray(list) && list.length > 0) {
+        if (Array.isArray(list)) {
           const processed = list.map((s) => ({
             ...s,
-            imagen: this.normalizeImageUrl(s.imagen)
+            precioUSD: parseFloat(s.precio_usd || s.precioUSD) || 0,
+            imagen: this.normalizeImageUrl(s.imagen),
+            director: s.director || 'Dirección General',
+            duracionMin: s.duracion_min || s.duracionMin || 90,
+            edadMinima: s.edad_minima || s.edadMinima || 'Todo público',
+            likes: s.likes || 0,
+            comentarios: Array.isArray(s.comentarios) ? s.comentarios.filter(c => c && c.id) : [],
+            criticas: Array.isArray(s.criticas) ? s.criticas.filter(c => c && c.id).map(c => ({
+              autor: c.nombre_autor || c.autor,
+              texto: c.texto,
+              estrellas: c.estrellas || 5,
+              fecha: c.fecha ? String(c.fecha).split('T')[0] : ''
+            })) : []
           }));
           store.setState({ shows: processed });
           return processed;
         }
       }
-    } catch (e) {}
-
-    // 3. Modo Local Fallback
-    let saved = localStorage.getItem(CONFIG.STORAGE_KEYS.SHOWS);
-    if (!saved) {
-      try {
-        const res = await fetch('assets/data/mockData.json');
-        const initialData = await res.json();
-        localStorage.setItem(CONFIG.STORAGE_KEYS.SHOWS, JSON.stringify(initialData));
-        saved = JSON.stringify(initialData);
-      } catch (e) {
-        saved = '[]';
-      }
+    } catch (e) {
+      console.warn('No se pudo cargar carteleras desde API:', e.message);
     }
-
-    let shows = JSON.parse(saved || '[]');
-    const interactions = this.getInteractions();
-
-    shows = shows.map((item) => {
-      const itemInteractions = interactions[item.id] || { likes: 0, comentarios: [], criticas: [] };
-      return {
-        ...item,
-        imagen: this.normalizeImageUrl(item.imagen),
-        director: item.director || 'Dirección General',
-        duracionMin: item.duracionMin || 90,
-        edadMinima: item.edadMinima || 'Todo público',
-        likes: itemInteractions.likes || item.likes || 0,
-        comentarios: itemInteractions.comentarios || item.comentarios || [],
-        criticas: itemInteractions.criticas || item.criticas || [
-          {
-            autor: 'Armando Reverón (Crítica Cultural)',
-            rol: 'Crítico',
-            texto: 'Una propuesta estética sobresaliente con actuaciones de alto impacto escénico.',
-            estrellas: 5,
-            esDestacada: true,
-            fecha: '2026-09-01'
-          }
-        ]
-      };
-    });
-
-    shows.sort((a, b) => (a.fecha + ' ' + a.hora).localeCompare(b.fecha + ' ' + b.hora));
-    store.setState({ shows });
-    return shows;
+    const fallback = this._getFallbackShows();
+    store.setState({ shows: fallback });
+    return fallback;
   },
 
-  /**
-   * Guarda o actualiza un espectáculo en la base de datos
-   */
   async saveCartelera(obraData) {
     obraData.imagen = this.normalizeImageUrl(obraData.imagen || obraData.fotoURLActual || '');
-
-    // 1. Enviar a backend PHP / MySQL (XAMPP)
-    try {
-      const res = await fetch('api/carteleras.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(obraData)
-      });
-      if (res.ok) {
-        await this.getCarteleras();
-        return { success: true };
-      }
-    } catch (e) {}
-
-    // 2. Local Storage fallback
-    const shows = store.getState().shows || [];
-    const index = shows.findIndex((s) => s.id.toString() === obraData.id.toString());
-    if (index !== -1) {
-      shows[index] = { ...shows[index], ...obraData };
-    } else {
-      shows.push({
-        ...obraData,
-        id: obraData.id || Date.now().toString(),
-        likes: 0,
-        comentarios: [],
-        criticas: []
-      });
+    const res = await fetch('/api/carteleras', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(obraData)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Error al guardar la obra');
     }
-
-    localStorage.setItem(CONFIG.STORAGE_KEYS.SHOWS, JSON.stringify(shows));
-    store.setState({ shows: [...shows] });
+    await this.getCarteleras();
     return { success: true };
   },
 
-  /**
-   * Elimina un espectáculo por ID
-   */
   async deleteCartelera(id) {
-    try {
-      const res = await fetch(`api/carteleras.php?id=${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        await this.getCarteleras();
-        return true;
-      }
-    } catch (e) {}
-
+    const res = await fetch(`/api/carteleras?id=${id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Error al eliminar la obra');
+    }
     let shows = store.getState().shows || [];
     shows = shows.filter((s) => s.id.toString() !== id.toString());
-    localStorage.setItem(CONFIG.STORAGE_KEYS.SHOWS, JSON.stringify(shows));
     store.setState({ shows: [...shows] });
     return true;
   },
 
-  /**
-   * Obtiene la ficha informativa del teatro y sus estadísticas en vivo
-   */
   async getTeatroInfo() {
     try {
-      const res = await fetch('api/teatros.php');
+      const res = await fetch('/api/teatros');
       if (res.ok) {
         const data = await res.json();
-        if (data && data.teatro) {
-          return data;
-        }
+        if (data && data.teatro) return data;
       }
-    } catch (e) {}
-
-    // Fallback local
-    const orders = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.ORDERS) || '[]');
-    const totalVendidas = CONFIG.TEATRO_DEFAULT.estadisticas.butacasVendidas + orders.length;
-
+    } catch (e) {
+      console.warn('No se pudo cargar info del teatro:', e.message);
+    }
     return {
       teatro: CONFIG.TEATRO_DEFAULT,
-      estadisticas: {
-        ...CONFIG.TEATRO_DEFAULT.estadisticas,
-        butacasVendidas: totalVendidas,
-        totalRecaudadoUSD: orders.reduce((sum, o) => sum + (parseFloat(o.precioUSD) || 0), 0)
-      }
+      estadisticas: { ...CONFIG.TEATRO_DEFAULT.estadisticas }
     };
   },
 
-  /**
-   * Registra like, comentario o crítica con distinción de roles
-   */
   async addInteraccion(idObra, tipo, valor = '', estrellas = 5) {
     const user = store.getState().user;
     const nombreAutor = user ? user.nombre : 'Visitante';
     const rolAutor = user ? user.rol : CONFIG.ROLES.VISITOR;
-
     try {
-      await fetch('api/interacciones.php', {
+      await fetch('/api/interacciones', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -207,70 +114,67 @@ export const apiService = {
           estrellas
         })
       });
-    } catch (e) {}
-
-    // Actualizar local
-    const interactions = this.getInteractions();
-    if (!interactions[idObra]) {
-      interactions[idObra] = { likes: 0, comentarios: [], criticas: [] };
+    } catch (e) {
+      console.warn('Error al guardar interacción:', e.message);
     }
-
-    if (tipo === 'like') {
-      interactions[idObra].likes += 1;
-    } else if (tipo === 'critica' || rolAutor === CONFIG.ROLES.CRITIC) {
-      interactions[idObra].criticas.unshift({
-        autor: nombreAutor,
-        rol: rolAutor,
-        texto: valor,
-        estrellas,
-        esDestacada: true,
-        fecha: new Date().toISOString().split('T')[0]
-      });
-    } else if (tipo === 'comentario') {
-      interactions[idObra].comentarios.unshift({
-        autor: nombreAutor,
-        texto: valor,
-        fecha: new Date().toISOString().split('T')[0]
-      });
-    }
-
-    localStorage.setItem(CONFIG.STORAGE_KEYS.INTERACTIONS, JSON.stringify(interactions));
     await this.getCarteleras();
     return true;
   },
 
-  getInteractions() {
-    try {
-      return JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.INTERACTIONS) || '{}');
-    } catch (e) {
-      return {};
-    }
-  },
-
-  /**
-   * Obtiene el historial de compras por correo
-   */
   async getPurchasesByEmail(email) {
     if (!email) return [];
     const emailNorm = email.trim().toLowerCase();
-
     try {
-      const res = await fetch(`api/tickets.php?email=${encodeURIComponent(emailNorm)}`);
+      const res = await fetch(`/api/tickets?email=${encodeURIComponent(emailNorm)}`);
       if (res.ok) {
         const purchases = await res.json();
-        if (Array.isArray(purchases) && purchases.length > 0) {
-          return purchases;
+        if (Array.isArray(purchases)) {
+          return purchases.map(t => ({
+            ticketId: t.ticket_id,
+            nombreCliente: t.nombre_cliente,
+            emailCliente: t.email_cliente,
+            obra: t.obra,
+            funcion: t.funcion,
+            sala: t.sala,
+            asiento: t.asiento,
+            fechaFuncion: t.fecha_funcion,
+            horaFuncion: t.hora_funcion,
+            precioUSD: parseFloat(t.precio_usd),
+            precioVES: parseFloat(t.precio_ves),
+            tasaBCV: parseFloat(t.tasa_bcv),
+            refPago: t.ref_pago,
+            fechaEmision: t.fecha_emision,
+            horaEmision: t.hora_emision
+          }));
         }
       }
-    } catch (e) {}
-
-    try {
-      const orders = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.ORDERS) || '[]');
-      const filtered = orders.filter((o) => o.emailCliente && o.emailCliente.toLowerCase() === emailNorm);
-      filtered.sort((a, b) => (b.fechaEmision + ' ' + b.horaEmision).localeCompare(a.fechaEmision + ' ' + a.horaEmision));
-      return filtered;
     } catch (e) {
-      return [];
+      console.warn('Error al cargar historial de compras:', e.message);
     }
+    return [];
+  },
+
+  _getFallbackShows() {
+    return [
+      {
+        id: 1, obra: 'Hamlet', funcion: 'Función de Gala', genero: 'Drama',
+        sala: 'Sala Principal', director: 'Luis Arraiz', fecha: '2026-09-20',
+        hora: '19:00', precioUSD: 15.00,
+        sinopsis: 'La obra maestra de Shakespeare sobre venganza, traición y existencia humana.',
+        reparto: 'Carlos Martínez, Ana González, Pedro Mora', imagen: '',
+        duracionMin: 120, edadMinima: 'Todo público', likes: 0, comentarios: [],
+        criticas: [{ autor: 'Armando Reverón (Crítica Cultural)',
+          texto: 'Una propuesta estética sobresaliente con actuaciones de alto impacto escénico.',
+          estrellas: 5, fecha: '2026-09-01' }]
+      },
+      {
+        id: 2, obra: 'La Comedia de las Equivocaciones', funcion: 'Función Familiar',
+        genero: 'Comedia', sala: 'Sala 7', director: 'María Escalona',
+        fecha: '2026-09-21', hora: '17:00', precioUSD: 10.00,
+        sinopsis: 'Una hilarante comedia de enredos con gemelos y confusiones imposibles.',
+        reparto: 'Grupo Teatral Caracas', imagen: '', duracionMin: 90,
+        edadMinima: 'Todo público', likes: 0, comentarios: [], criticas: []
+      }
+    ];
   }
 };

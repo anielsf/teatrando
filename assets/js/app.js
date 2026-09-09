@@ -39,6 +39,7 @@ class App {
     await this.reloadCartelera();
 
     // 5. Determinar vista inicial (Inicio como punto de partida para todos, incluidos Visitantes)
+    const currentUser = authService.getCurrentUser();
     if (currentUser) {
       accountView.updateAccountUI();
       accountView.loadUserPurchases();
@@ -59,7 +60,8 @@ class App {
   }
 
   handleSelectShow(show) {
-    carteleraView.showDetail(show);
+    // Iniciar el flujo de compra directamente (mapa de butacas)
+    checkoutView.startCheckout(show);
   }
 
   async reloadCartelera() {
