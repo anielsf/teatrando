@@ -11,7 +11,7 @@ export const CONFIG = {
 
   // Credenciales del proyecto Supabase
   SUPABASE_URL: 'https://muqhnbmaqprokczltdrj.supabase.co',
-  SUPABASE_ANON_KEY: 'sb_publishable_BgxJ27gmu6KQk-8QH_6MIQ_OGVlg6TW',
+  SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11cWhuYm1hcXByb2tjemx0ZHJqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyMzE0MzgsImV4cCI6MjEwMzgwNzQzOH0.XYd938PtkvRvJPQGkTqstvDbHl5V8r-UmSnuBXR1N8I',
 
   // Nuevos Roles del Sistema
   ROLES: {
