@@ -23,51 +23,102 @@
   <link rel="stylesheet" href="assets/css/views/checkout.css">
   <link rel="stylesheet" href="assets/css/views/admin.css">
   <link rel="stylesheet" href="assets/css/views/auth.css">
+
+  <style>
+    /* Estilos para Modal de Suscripciones y Críticos */
+    .modal-sub-overlay {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.85); backdrop-filter: blur(5px);
+      display: flex; align-items: center; justify-content: center; z-index: 10000;
+      padding: 15px;
+    }
+    .modal-sub-content {
+      background: #141414; border: 1px solid var(--gold);
+      border-radius: 12px; max-width: 900px; width: 100%;
+      padding: 25px; max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+    }
+    .btn-close-sub {
+      background: none; border: none; font-size: 1.8rem; color: #aaa; cursor: pointer;
+    }
+    .btn-close-sub:hover { color: #fff; }
+    .card-plan {
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .card-plan:hover {
+      transform: translateY(-4px);
+      border-color: var(--gold) !important;
+    }
+    .plan-actual {
+      box-shadow: 0 0 15px rgba(212, 175, 55, 0.25);
+    }
+    .text-truncate-2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+  </style>
 </head>
 <body>
 
   <!-- Barra de navegación global -->
-  <nav id="navbar-principal" class="navbar navbar-expand-lg navbar-teatro mb-4" style="display: none;">
+  <nav id="navbar-principal" class="navbar navbar-expand-lg navbar-teatro mb-4">
     <div class="container">
       <a class="navbar-brand marca-teatro" href="#" data-navigate="vista-inicio">
         <span class="mascara">🎭</span> TEATRANDO
       </a>
       <div class="d-flex align-items-center flex-wrap gap-2">
         <span class="tasa-bcv-badge" id="indicador-tasa">Tasa BCV: cargando…</span>
-        <button class="btn btn-nav btn-sm" data-navigate="vista-cartelera">Cartelera</button>
+        <button class="btn btn-nav btn-sm" data-navigate="vista-cartelera">Cartelera & Teatro</button>
+        <button class="btn btn-outline-warning btn-sm" id="btn-nav-suscripcion" title="Ver membresías y planes">⭐ Planes & Suscripciones</button>
         <button class="btn btn-nav btn-sm" data-navigate="vista-mi-cuenta">Mi cuenta</button>
-        <button class="btn btn-nav btn-sm" id="btn-nav-ultima-entrada" title="Ver la última entrada comprada en este navegador">Mi última entrada</button>
+        <button class="btn btn-nav btn-sm" id="btn-nav-ultima-entrada" title="Ver la última entrada comprada">Mi última entrada</button>
         <button class="btn btn-nav btn-sm" data-navigate="vista-ayuda">Ayuda</button>
         <button class="btn btn-admin btn-sm" id="btn-nav-admin" data-navigate="vista-admin" style="display: none;">Admin</button>
+        <span id="badge-usuario-rol" class="ms-1" style="display: inline-block;"></span>
       </div>
     </div>
   </nav>
 
-  <!-- 1. Vista de Inicio (Hero + Destacados) -->
   <main>
+    <!-- 1. Vista de Inicio (Hero + Destacados) -->
     <section id="vista-inicio" class="vista container">
       <div class="hero-teatro mb-4">
-        <span class="eyebrow">Cartelera teatral · Caracas</span>
+        <span class="eyebrow">Cartelera teatral oficial · Caracas</span>
         <h2>Bienvenido a Teatrando</h2>
-        <p>Reserva tu butaca, elige tu asiento y recibe tu entrada al instante.</p>
+        <p>Reserva tu butaca con la tasa oficial BCV, consulta críticas especializadas y vive la magia escénica.</p>
+        <div class="d-flex gap-2 justify-content-center mt-3">
+          <button class="btn btn-primary px-4 py-2" data-navigate="vista-cartelera">Ver Cartelera</button>
+          <button class="btn btn-outline-warning px-4 py-2" onclick="document.getElementById('btn-nav-suscripcion').click()">Conocer Planes</button>
+        </div>
       </div>
 
       <div id="buscador-rapido-filtros" class="mb-4">
-        <label class="campo-label" for="input-busqueda-rapida">Buscar espectáculo</label>
-        <input type="text" id="input-busqueda-rapida" class="form-control" placeholder="Título, género o sala…">
+        <label class="campo-label" for="input-busqueda-rapida">Buscar espectáculo o sala</label>
+        <input type="text" id="input-busqueda-rapida" class="form-control" placeholder="Título, director, género o sala…">
       </div>
 
       <div class="row">
         <div class="col-md-12" id="seccion-proximos-eventos">
-          <h4 class="titulo-seccion pb-2">Próximos eventos</h4>
+          <h4 class="titulo-seccion pb-2">Próximos eventos en cartelera</h4>
           <div id="contenedor-inicio-eventos" class="row my-3"></div>
         </div>
       </div>
     </section>
 
-    <!-- 2. Vista de Cartelera con Filtros -->
+    <!-- 2. Vista de Cartelera con Filtros y Sección Institucional del Teatro -->
     <section id="vista-cartelera" class="vista container">
-      <h3 class="titulo-seccion mb-3 pb-2">Cartelera teatral</h3>
+      <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom" style="border-color: var(--line) !important;">
+        <h3 class="titulo-seccion mb-0">Cartelera Teatral</h3>
+        <span class="text-muted small">Funciones de temporada</span>
+      </div>
+
+      <!-- Apartado Dinámico: Información del Teatro y Estadísticas de Aforo -->
+      <div id="apartado-teatro-estadisticas"></div>
+
+      <!-- Filtros de Obras -->
+      <h4 class="titulo-seccion mb-3 pb-2">Buscar Funciones</h4>
       <div class="filtros mb-4 row g-2">
         <div class="col-md-3">
           <label class="campo-label" for="filtro-genero">Género</label>
@@ -95,6 +146,8 @@
           </select>
         </div>
       </div>
+
+      <!-- Contenedor de Obras -->
       <div class="row" id="contenedor-carteleras">
         <div class="text-center mt-5">
           <div class="spinner-border" style="color:var(--gold)"></div>
@@ -103,19 +156,26 @@
       </div>
     </section>
 
-    <!-- 3. Vista de Detalle de la Obra -->
+    <!-- 3. Vista de Detalle de la Obra (con Ficha Técnica y Críticas VIP) -->
     <section id="vista-detalle-obra" class="vista container">
       <button class="btn btn-sm btn-outline-secondary mb-3" data-navigate="vista-cartelera">← Volver a cartelera</button>
       <div class="row">
         <div class="col-md-4">
-          <img id="detalle-img" class="img-fluid rounded border" style="border-color: var(--line) !important;" src="" alt="Póster de la obra">
+          <img id="detalle-img" class="img-fluid rounded border shadow" style="border-color: var(--line) !important; width: 100%; object-fit: cover;" src="" alt="Póster de la obra">
         </div>
         <div class="col-md-8">
-          <h2 id="detalle-titulo"></h2>
+          <h2 id="detalle-titulo" class="mb-1"></h2>
           <h5 id="detalle-funcion" style="color: var(--info);"></h5>
-          <span class="badge-genero" id="detalle-genero"></span>
-          <span class="badge-genero" id="detalle-sala"></span>
+          <div class="mb-2">
+            <span class="badge-genero" id="detalle-genero"></span>
+            <span class="badge-genero" id="detalle-sala"></span>
+          </div>
+
           <h4 class="mt-2 precio-usd" id="detalle-precio"></h4>
+
+          <!-- Ficha técnica extendida -->
+          <div id="detalle-ficha-tecnica"></div>
+
           <div id="sinopsis-y-reparto" class="mt-3">
             <h5 class="titulo-seccion pb-2">Sinopsis</h5>
             <p id="detalle-sinopsis" class="text-muted"></p>
@@ -125,7 +185,10 @@
           <div id="calendario-funciones" class="mt-3">
             <p><strong>Fecha:</strong> <span id="detalle-fecha"></span> &nbsp;|&nbsp; <strong>Hora:</strong> <span id="detalle-hora"></span></p>
           </div>
-          <button class="btn btn-primary btn-lg mt-3" id="btn-iniciar-compra-detalle">Comprar entradas</button>
+          <button class="btn btn-primary btn-lg mt-3 w-100" id="btn-iniciar-compra-detalle">Comprar entradas</button>
+
+          <!-- Críticas de Prensa y Comentarios -->
+          <div id="contenedor-criticas-detalle"></div>
         </div>
       </div>
     </section>
@@ -197,38 +260,49 @@
       </div>
     </section>
 
-    <!-- 5. Área de Cliente / Autenticación -->
+    <!-- 5. Área de Cliente / Autenticación y Membresías -->
     <section id="vista-mi-cuenta" class="vista activa container">
       <!-- Panel de Usuario Autenticado -->
       <div id="bloque-sesion-usuario" style="display: none;">
-        <h3 class="titulo-seccion mb-4 pb-2">Área de cliente</h3>
+        <h3 class="titulo-seccion mb-4 pb-2">Área de Cliente</h3>
         <div class="d-flex justify-content-between align-items-center mb-4 caja-sesion p-3">
           <div>
-            <h4 id="user-display-name" class="mb-0"></h4>
+            <h4 id="user-display-name" class="mb-1"></h4>
             <small id="user-display-email" class="text-muted"></small>
           </div>
-          <button class="btn btn-outline-danger btn-sm" id="btn-cerrar-sesion">Cerrar sesión</button>
+          <div class="d-flex gap-2">
+            <button class="btn btn-outline-warning btn-sm" id="btn-mejorar-plan-cuenta">⭐ Planes</button>
+            <button class="btn btn-outline-danger btn-sm" id="btn-cerrar-sesion">Cerrar sesión</button>
+          </div>
         </div>
-        <h4 class="titulo-seccion pb-2">Historial de compras y facturación</h4>
+
+        <!-- Tarjeta de Plan Actual -->
+        <div id="user-display-plan-card"></div>
+
+        <h4 class="titulo-seccion pb-2">Historial de entradas y compras</h4>
         <div id="contenedor-historial-compras" class="mt-3"></div>
 
-        <!-- Panel opcional para estadísticas y métricas (Productores) -->
+        <!-- Panel opcional para estadísticas (Admin) -->
         <div id="panel-estadisticas" class="mt-4" style="display: none;">
-          <h4 class="titulo-seccion pb-2">Métricas y Rendimiento</h4>
-          <p class="text-muted">Panel de control disponible para Grupos Teatrales y Administradores.</p>
+          <h4 class="titulo-seccion pb-2">Métricas y Administración</h4>
+          <p class="text-muted">Tienes acceso privilegiado de Administrador al sistema.</p>
         </div>
       </div>
 
       <!-- Módulo de Autenticación para Visitantes -->
-      <div id="bloque-auth" class="card p-4 mx-auto mt-4" style="max-width: 450px;">
+      <div id="bloque-auth" class="card p-4 mx-auto mt-4" style="max-width: 500px;">
         <!-- Auth: Inicio -->
         <div id="auth-inicio" class="vista-auth">
-          <h4 class="mb-3 text-center">Acceso a Teatrando</h4>
-          <button class="btn btn-primary w-100 mb-2" onclick="cambiarVistaAuth('auth-login')">Ya estoy registrado (Iniciar Sesión)</button>
-          <button class="btn btn-outline-secondary w-100 mb-4" onclick="cambiarVistaAuth('auth-registro-opciones')">Crear cuenta nueva</button>
+          <h4 class="mb-2 text-center">Acceso a Teatrando</h4>
+          <p class="text-muted small text-center mb-3">Inicia sesión o regístrate para comprar entradas o publicar reseñas oficiales.</p>
+          <button class="btn btn-primary w-100 mb-2" onclick="cambiarVistaAuth('auth-login')">Iniciar Sesión</button>
+          <button class="btn btn-outline-secondary w-100 mb-3" onclick="cambiarVistaAuth('auth-registro-local')">Crear cuenta nueva</button>
           <hr style="border-color: var(--line);">
-          <p class="text-muted text-center small mb-2">¿Eres un Grupo Teatral o Productor?</p>
-          <button class="btn btn-sm btn-nav w-100" onclick="cambiarVistaAuth('auth-manual')">Solicitar alta de productor</button>
+          <div class="text-center">
+            <button class="btn btn-outline-warning btn-sm w-100" onclick="document.getElementById('btn-nav-suscripcion').click()">
+              ⭐ Ver Planes de Suscripción (Bambalinas / Crítico VIP)
+            </button>
+          </div>
         </div>
 
         <!-- Auth: Login -->
@@ -236,7 +310,7 @@
           <h4 class="mb-3">Iniciar sesión</h4>
           <form id="form-login">
             <label class="campo-label" for="login-email">Correo electrónico</label>
-            <input type="email" id="login-email" class="form-control mb-3" required>
+            <input type="email" id="login-email" class="form-control mb-3" placeholder="admin@teatrando.com" required>
             <label class="campo-label" for="login-password">Contraseña</label>
             <input type="password" id="login-password" class="form-control mb-3" required>
             <button type="submit" class="btn btn-primary w-100 mb-2">Ingresar</button>
@@ -244,33 +318,19 @@
           </form>
         </div>
 
-        <!-- Auth: Opciones de Registro -->
-        <div id="auth-registro-opciones" class="vista-auth" style="display: none;">
-          <h4 class="mb-3">Método de registro</h4>
-          <button class="btn btn-primary w-100 mb-2" onclick="cambiarVistaAuth('auth-registro-local')">Registro con Correo y Contraseña</button>
-          <button class="btn btn-nav w-100 mt-2" onclick="cambiarVistaAuth('auth-inicio')">Volver</button>
-        </div>
-
         <!-- Auth: Formulario de Registro Local -->
         <div id="auth-registro-local" class="vista-auth" style="display: none;">
-          <h4 class="mb-3">Registro de Cliente</h4>
+          <h4 class="mb-3">Registro de Usuario</h4>
           <form id="form-registro">
             <label class="campo-label" for="reg-nombre">Nombre completo</label>
-            <input type="text" id="reg-nombre" class="form-control mb-3" required>
+            <input type="text" id="reg-nombre" class="form-control mb-3" placeholder="Ej: Armando Reverón" required>
             <label class="campo-label" for="reg-email">Correo electrónico</label>
-            <input type="email" id="reg-email" class="form-control mb-3" required>
+            <input type="email" id="reg-email" class="form-control mb-3" placeholder="tu@correo.com" required>
             <label class="campo-label" for="reg-password">Contraseña</label>
             <input type="password" id="reg-password" class="form-control mb-3" required>
-            <button type="submit" class="btn btn-success w-100 mb-2">Crear cuenta</button>
-            <button type="button" class="btn btn-nav w-100" onclick="cambiarVistaAuth('auth-registro-opciones')">Volver</button>
+            <button type="submit" class="btn btn-success w-100 mb-2">Crear mi cuenta</button>
+            <button type="button" class="btn btn-nav w-100" onclick="cambiarVistaAuth('auth-inicio')">Volver</button>
           </form>
-        </div>
-
-        <!-- Auth: Registro Manual Productor -->
-        <div id="auth-manual" class="vista-auth" style="display: none;">
-          <h4 class="mb-3">Solicitud de Grupo Teatral</h4>
-          <p class="text-muted small">Contacte al administrador del sistema para el alta de salas, grupos y permisos de productor.</p>
-          <button class="btn btn-nav w-100 mt-3" onclick="cambiarVistaAuth('auth-inicio')">Volver al inicio</button>
         </div>
       </div>
 
@@ -293,39 +353,72 @@
 
     <!-- 6. Vista de Ayuda y Soporte -->
     <section id="vista-ayuda" class="vista container">
-      <h3 class="titulo-seccion mb-4 pb-2">Soporte y ayuda</h3>
+      <h3 class="titulo-seccion mb-4 pb-2">Soporte y Membresías</h3>
       <div class="accordion" id="accordionAyuda">
         <div class="accordion-item">
           <h2 class="accordion-header">
-            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
-              ¿Cómo accedo a mis entradas compradas?
+            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq0">
+              ¿Qué ventajas tienen los planes Bambalinas y Crítico / VIP?
             </button>
           </h2>
-          <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#accordionAyuda">
+          <div id="faq0" class="accordion-collapse collapse show" data-bs-parent="#accordionAyuda">
             <div class="accordion-body">
-              Puedes ver y reimprimir tus entradas en cualquier momento ingresando a la sección "Mi cuenta" o usando el botón rápido "Mi última entrada".
+              El <strong>Plan Bambalinas</strong> ($9.99/mes) elimina todas las comisiones de servicio y te da acceso a pre-ventas 48h antes. El <strong>Plan Crítico / VIP</strong> ($19.99/mes) te otorga el distintivo oficial verificado en reseñas y pases a ruedas de prensa y foyer VIP.
             </div>
           </div>
         </div>
         <div class="accordion-item mt-2">
           <h2 class="accordion-header">
-            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
-              Política de reembolsos y cambios
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+              ¿Cómo accedo a mis entradas compradas?
             </button>
           </h2>
-          <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#accordionAyuda">
+          <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#accordionAyuda">
             <div class="accordion-body">
-              Los cambios y reembolsos están sujetos a notificación con un mínimo de 24 horas previas al inicio de la función en la sala correspondiente.
+              Puedes ver y reimprimir tus entradas en cualquier momento ingresando a la sección "Mi cuenta" o usando el botón rápido "Mi última entrada".
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- 7. Panel de Administración CRUD -->
+    <!-- 7. Panel de Administración CRUD (Obras y Gestión de Teatro) -->
     <section id="vista-admin" class="vista container">
-      <h2 class="titulo-seccion mb-4 pb-2">Administración de cartelera</h2>
+      <h2 class="titulo-seccion mb-4 pb-2">Panel de Administración Teatral</h2>
+
+      <!-- Formulario Ficha del Teatro y Normas -->
+      <div class="card p-4 mb-4" style="border: 1px solid var(--gold);">
+        <h4 class="mb-3" style="color: var(--gold);">🏛️ Información y Ficha Técnica del Teatro</h4>
+        <form id="form-teatro-admin">
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label class="campo-label" for="admin-teatro-aforo">Aforo Total de Butacas</label>
+              <input type="number" id="admin-teatro-aforo" class="form-control" required>
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="campo-label" for="admin-teatro-telefono">Teléfono de Taquilla</label>
+              <input type="text" id="admin-teatro-telefono" class="form-control" required>
+            </div>
+            <div class="col-md-12 mb-3">
+              <label class="campo-label" for="admin-teatro-historia">Historia y Arquitectura</label>
+              <textarea id="admin-teatro-historia" class="form-control" rows="2"></textarea>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="campo-label" for="admin-teatro-servicios">Servicios (separados por coma)</label>
+              <input type="text" id="admin-teatro-servicios" class="form-control" placeholder="Estacionamiento, Cafetería, Rampas…">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="campo-label" for="admin-teatro-normas">Normas de Sala (separadas por coma)</label>
+              <input type="text" id="admin-teatro-normas" class="form-control" placeholder="Puntualidad, Sin flash…">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-warning text-dark fw-bold" id="btn-guardar-teatro">Actualizar Ficha del Teatro</button>
+        </form>
+      </div>
+
+      <!-- Formulario de Espectáculos -->
       <div class="card p-4 mb-4">
+        <h4 class="mb-3">🎭 Registro y Edición de Obras</h4>
         <form id="form-obra">
           <input type="hidden" id="admin-id">
           <input type="hidden" id="admin-foto-actual">
@@ -344,7 +437,19 @@
             </div>
             <div class="col-md-3 mb-3">
               <label class="campo-label" for="admin-sala">Sala</label>
-              <input type="text" id="admin-sala" class="form-control" placeholder="Sala principal" required>
+              <input type="text" id="admin-sala" class="form-control" placeholder="Sala Principal" required>
+            </div>
+            <div class="col-md-3 mb-3">
+              <label class="campo-label" for="admin-director">Director</label>
+              <input type="text" id="admin-director" class="form-control" placeholder="Nombre del director">
+            </div>
+            <div class="col-md-3 mb-3">
+              <label class="campo-label" for="admin-duracion">Duración (minutos)</label>
+              <input type="number" id="admin-duracion" class="form-control" placeholder="90" value="90">
+            </div>
+            <div class="col-md-3 mb-3">
+              <label class="campo-label" for="admin-edad">Clasificación</label>
+              <input type="text" id="admin-edad" class="form-control" placeholder="Todo público / +14" value="Todo público">
             </div>
             <div class="col-md-3 mb-3">
               <label class="campo-label" for="admin-fecha">Fecha de función</label>
@@ -354,11 +459,11 @@
               <label class="campo-label" for="admin-hora">Hora de función</label>
               <input type="time" id="admin-hora" class="form-control" required>
             </div>
-            <div class="col-md-4 mb-3">
+            <div class="col-md-3 mb-3">
               <label class="campo-label" for="admin-precio">Precio (USD)</label>
               <input type="number" step="0.01" min="0" id="admin-precio" class="form-control" placeholder="Ej: 15.00" required>
             </div>
-            <div class="col-md-8 mb-3">
+            <div class="col-md-12 mb-3">
               <label class="campo-label" for="admin-foto">Póster de la obra</label>
               <input type="file" id="admin-foto" class="form-control" accept="image/*">
             </div>
@@ -409,12 +514,5 @@
 
   <!-- Script Principal de la Aplicación Modular -->
   <script type="module" src="assets/js/app.js"></script>
-
-  <!-- Vercel Web Analytics & Speed Insights -->
-  <script>
-    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
-  </script>
-  <script defer src="/_vercel/insights/script.js"></script>
-  <script defer src="/_vercel/speed-insights/script.js"></script>
 </body>
 </html>

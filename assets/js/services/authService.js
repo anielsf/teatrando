@@ -1,6 +1,8 @@
 /**
- * Servicio de Autenticación, Gestión de Sesiones, Roles y Planes
- * Conecta con Vercel Postgres (/api/auth) o almacenamiento local.
+ * Servicio de Autenticación, Roles y Suscripciones de Teatrando
+ * Conexión con MySQL (XAMPP / PHP) y fallback de almacenamiento local.
+ * Roles: Visitante, Usuario, Crítico, Admin
+ * Planes: Plan Básico (Gratis), Plan Bambalinas, Plan Crítico / VIP
  */
 import { CONFIG } from '../config.js';
 import { store } from '../state/store.js';
@@ -28,9 +30,9 @@ export const authService = {
   async login(email, password) {
     const emailNorm = this.normalizeEmail(email);
 
-    // 1. Intentar Vercel Postgres API
+    // 1. Intentar Backend PHP / MySQL (XAMPP)
     try {
-      const res = await fetch('/api/auth', {
+      const res = await fetch('api/auth.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'login', email: emailNorm, password })
@@ -44,24 +46,7 @@ export const authService = {
       }
     } catch (e) {}
 
-    // 2. Intentar Apps Script
-    if (typeof google !== 'undefined' && google.script && google.script.run) {
-      return new Promise((resolve) => {
-        google.script.run
-          .withSuccessHandler((res) => {
-            if (res.success && res.usuario) {
-              this.setSession(res.usuario);
-              resolve({ success: true, user: res.usuario });
-            } else {
-              resolve({ success: false, message: res.mensaje || 'Credenciales inválidas.' });
-            }
-          })
-          .withFailureHandler((err) => resolve({ success: false, message: err.message }))
-          .autenticarUsuario(emailNorm, password);
-      });
-    }
-
-    // 3. Modo Local fallback
+    // 2. Modo Local Fallback
     const users = this.getLocalUsers();
     const found = users.find((u) => u.email === emailNorm && u.password === password);
 
@@ -70,23 +55,48 @@ export const authService = {
         id: found.id,
         nombre: found.nombre,
         email: found.email,
-        rol: found.rol || CONFIG.ROLES.CONSUMER,
-        plan: found.plan || CONFIG.PLANS.FREE
+        rol: found.rol || CONFIG.ROLES.USER,
+        plan: found.plan || CONFIG.PLANS.BASIC
       };
       this.setSession(userSession);
       return { success: true, user: userSession };
     }
 
-    return { success: false, message: 'Credenciales inválidas.' };
+    // Usuario demo inicial si coincide
+    if (emailNorm === 'admin@teatrando.com' && password === 'admin123') {
+      const adminUser = {
+        id: 'USR-ADMIN-01',
+        nombre: 'Administrador Principal',
+        email: emailNorm,
+        rol: CONFIG.ROLES.ADMIN,
+        plan: CONFIG.PLANS.CRITIC_VIP
+      };
+      this.setSession(adminUser);
+      return { success: true, user: adminUser };
+    }
+
+    if (emailNorm === 'critico@prensa.com' && password === 'critico123') {
+      const criticUser = {
+        id: 'USR-CRITIC-01',
+        nombre: 'Armando Reverón (Crítico)',
+        email: emailNorm,
+        rol: CONFIG.ROLES.CRITIC,
+        plan: CONFIG.PLANS.CRITIC_VIP
+      };
+      this.setSession(criticUser);
+      return { success: true, user: criticUser };
+    }
+
+    return { success: false, message: 'Correo o contraseña incorrectos.' };
   },
 
   async register(nombre, email, password) {
     const emailNorm = this.normalizeEmail(email);
     const nombreLimpio = (nombre || '').toString().trim();
 
-    // 1. Intentar Vercel Postgres API
+    // 1. Intentar Backend PHP / MySQL (XAMPP)
     try {
-      const res = await fetch('/api/auth', {
+      const res = await fetch('api/auth.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'register', nombre: nombreLimpio, email: emailNorm, password })
@@ -102,27 +112,21 @@ export const authService = {
       }
     } catch (e) {}
 
-    // 2. Apps Script
-    if (typeof google !== 'undefined' && google.script && google.script.run) {
-      return new Promise((resolve) => {
-        google.script.run
-          .withSuccessHandler((res) => {
-            if (res.success && res.usuario) {
-              this.setSession(res.usuario);
-              resolve({ success: true, user: res.usuario });
-            } else {
-              resolve({ success: false, message: res.mensaje || 'El correo ya se encuentra registrado.' });
-            }
-          })
-          .withFailureHandler((err) => resolve({ success: false, message: err.message }))
-          .registrarUsuario({ nombre: nombreLimpio, email: emailNorm, password });
-      });
-    }
-
-    // 3. Local fallback
+    // 2. Modo Local Fallback
     const users = this.getLocalUsers();
     if (users.some((u) => u.email === emailNorm)) {
       return { success: false, message: 'El correo electrónico ya se encuentra registrado.' };
+    }
+
+    let rol = CONFIG.ROLES.USER;
+    let plan = CONFIG.PLANS.BASIC;
+
+    if (emailNorm.includes('admin')) {
+      rol = CONFIG.ROLES.ADMIN;
+      plan = CONFIG.PLANS.CRITIC_VIP;
+    } else if (emailNorm.includes('critico')) {
+      rol = CONFIG.ROLES.CRITIC;
+      plan = CONFIG.PLANS.CRITIC_VIP;
     }
 
     const userId = 'USR-' + Math.random().toString(36).substring(2, 9).toUpperCase();
@@ -132,8 +136,8 @@ export const authService = {
       email: emailNorm,
       password: password,
       fechaRegistro: new Date().toISOString(),
-      rol: emailNorm.includes('admin') ? CONFIG.ROLES.ADMIN : (emailNorm.includes('grupo') ? CONFIG.ROLES.PRODUCER : CONFIG.ROLES.CONSUMER),
-      plan: CONFIG.PLANS.FREE
+      rol: rol,
+      plan: plan
     };
 
     users.push(newUser);
@@ -150,20 +154,60 @@ export const authService = {
     return { success: true, user: userSession };
   },
 
-  handleSSOLogin(payload) {
-    const emailNorm = this.normalizeEmail(payload.email);
-    const nombre = (payload.name || payload.nombre || 'Usuario Google').toString().trim();
+  /**
+   * Actualizar plan de suscripción del usuario tras pago
+   */
+  async upgradePlan(nuevoPlan, refPago, precioUSD, precioVES, tasaBCV) {
+    const user = this.getCurrentUser();
+    const userId = user ? user.id : 'INVITADO';
+    const email = user ? user.email : '';
 
-    const user = {
-      id: 'USR-' + Math.random().toString(36).substring(2, 9).toUpperCase(),
-      nombre: nombre,
-      email: emailNorm,
-      rol: CONFIG.ROLES.CONSUMER,
-      plan: CONFIG.PLANS.FREE
-    };
+    let nuevoRol = CONFIG.ROLES.USER;
+    if (nuevoPlan === CONFIG.PLANS.CRITIC_VIP) {
+      nuevoRol = CONFIG.ROLES.CRITIC;
+    } else if (user && user.rol === CONFIG.ROLES.ADMIN) {
+      nuevoRol = CONFIG.ROLES.ADMIN;
+    }
 
-    this.setSession(user);
-    return user;
+    // 1. Enviar a backend PHP / MySQL (XAMPP)
+    try {
+      await fetch('api/suscripciones.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          email,
+          plan: nuevoPlan,
+          refPago,
+          precioUSD,
+          precioVES,
+          tasaBCV
+        })
+      });
+    } catch (e) {}
+
+    // 2. Actualizar sesión local
+    if (user) {
+      const updatedUser = {
+        ...user,
+        plan: nuevoPlan,
+        rol: nuevoRol
+      };
+      this.setSession(updatedUser);
+
+      // Actualizar en listado local de usuarios
+      const users = this.getLocalUsers();
+      const idx = users.findIndex((u) => u.email === user.email);
+      if (idx !== -1) {
+        users[idx].plan = nuevoPlan;
+        users[idx].rol = nuevoRol;
+        localStorage.setItem(CONFIG.STORAGE_KEYS.USERS, JSON.stringify(users));
+      }
+
+      return { success: true, user: updatedUser };
+    }
+
+    return { success: true, plan: nuevoPlan, rol: nuevoRol };
   },
 
   getLocalUsers() {
@@ -196,13 +240,22 @@ export const authService = {
     return !!store.getState().user;
   },
 
-  isAdmin() {
-    const user = this.getCurrentUser();
-    return user && (user.rol === CONFIG.ROLES.ADMIN || user.rol === 'admin' || user.rol === 'Administrador');
+  isVisitor() {
+    return !this.isAuthenticated();
   },
 
-  isProducer() {
+  isCritic() {
     const user = this.getCurrentUser();
-    return user && (user.rol === CONFIG.ROLES.PRODUCER || user.rol === 'grupo_teatral' || user.rol === 'estadistico' || this.isAdmin());
+    return user && (user.rol === CONFIG.ROLES.CRITIC || user.plan === CONFIG.PLANS.CRITIC_VIP);
+  },
+
+  isAdmin() {
+    const user = this.getCurrentUser();
+    return user && user.rol === CONFIG.ROLES.ADMIN;
+  },
+
+  hasFreeFees() {
+    const user = this.getCurrentUser();
+    return user && (user.plan === CONFIG.PLANS.BAMBALINAS || user.plan === CONFIG.PLANS.CRITIC_VIP);
   }
 };

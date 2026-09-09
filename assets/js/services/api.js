@@ -1,6 +1,6 @@
 /**
  * Capa de Integración y Servicios de Base de Datos para Teatrando
- * Conexión centralizada con Vercel Postgres, Google Apps Script o fallback local.
+ * Conexión centralizada con MySQL (XAMPP / PHP) y fallback local.
  */
 import { CONFIG } from '../config.js';
 import { store } from '../state/store.js';
@@ -20,10 +20,26 @@ export const apiService = {
   },
 
   /**
-   * Obtiene la lista de carteleras centralizada desde Vercel Postgres / Backend
+   * Obtiene la lista de carteleras centralizada desde MySQL / Backend
    */
   async getCarteleras() {
-    // 1. Intentar endpoint en la nube de Vercel Postgres
+    // 1. Intentar endpoint PHP / MySQL en XAMPP
+    try {
+      const res = await fetch('api/carteleras.php');
+      if (res.ok) {
+        const list = await res.json();
+        if (Array.isArray(list) && list.length > 0) {
+          const processed = list.map((s) => ({
+            ...s,
+            imagen: this.normalizeImageUrl(s.imagen)
+          }));
+          store.setState({ shows: processed });
+          return processed;
+        }
+      }
+    } catch (e) {}
+
+    // 2. Intentar endpoint serverless Vercel si existe
     try {
       const res = await fetch('/api/carteleras');
       if (res.ok) {
@@ -39,24 +55,7 @@ export const apiService = {
       }
     } catch (e) {}
 
-    // 2. Integración con Google Apps Script si está embebido
-    if (typeof google !== 'undefined' && google.script && google.script.run) {
-      return new Promise((resolve) => {
-        google.script.run
-          .withSuccessHandler((datos) => {
-            const list = (datos || []).map((s) => ({
-              ...s,
-              imagen: this.normalizeImageUrl(s.imagen)
-            }));
-            store.setState({ shows: list });
-            resolve(list);
-          })
-          .withFailureHandler(() => resolve([]))
-          .obtenerCarteleras();
-      });
-    }
-
-    // 3. Modo Local / Fallback con mockData
+    // 3. Modo Local Fallback
     let saved = localStorage.getItem(CONFIG.STORAGE_KEYS.SHOWS);
     if (!saved) {
       try {
@@ -73,12 +72,25 @@ export const apiService = {
     const interactions = this.getInteractions();
 
     shows = shows.map((item) => {
-      const itemInteractions = interactions[item.id] || { likes: 0, comentarios: [] };
+      const itemInteractions = interactions[item.id] || { likes: 0, comentarios: [], criticas: [] };
       return {
         ...item,
         imagen: this.normalizeImageUrl(item.imagen),
+        director: item.director || 'Dirección General',
+        duracionMin: item.duracionMin || 90,
+        edadMinima: item.edadMinima || 'Todo público',
         likes: itemInteractions.likes || item.likes || 0,
-        comentarios: itemInteractions.comentarios || item.comentarios || []
+        comentarios: itemInteractions.comentarios || item.comentarios || [],
+        criticas: itemInteractions.criticas || item.criticas || [
+          {
+            autor: 'Armando Reverón (Crítica Cultural)',
+            rol: 'Crítico',
+            texto: 'Una propuesta estética sobresaliente con actuaciones de alto impacto escénico.',
+            estrellas: 5,
+            esDestacada: true,
+            fecha: '2026-09-01'
+          }
+        ]
       };
     });
 
@@ -93,35 +105,32 @@ export const apiService = {
   async saveCartelera(obraData) {
     obraData.imagen = this.normalizeImageUrl(obraData.imagen || obraData.fotoURLActual || '');
 
-    // 1. Enviar a Vercel Postgres
+    // 1. Enviar a backend PHP / MySQL (XAMPP)
     try {
-      const res = await fetch('/api/carteleras', {
+      const res = await fetch('api/carteleras.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(obraData)
       });
       if (res.ok) {
+        await this.getCarteleras();
         return { success: true };
       }
     } catch (e) {}
 
-    // 2. Apps Script
-    if (typeof google !== 'undefined' && google.script && google.script.run) {
-      return new Promise((resolve, reject) => {
-        google.script.run
-          .withSuccessHandler((res) => resolve(res))
-          .withFailureHandler((err) => reject(err))
-          .guardarCartelera(obraData);
-      });
-    }
-
-    // 3. Local Storage fallback
+    // 2. Local Storage fallback
     const shows = store.getState().shows || [];
     const index = shows.findIndex((s) => s.id.toString() === obraData.id.toString());
     if (index !== -1) {
       shows[index] = { ...shows[index], ...obraData };
     } else {
-      shows.push({ ...obraData, id: obraData.id || Date.now().toString(), likes: 0, comentarios: [] });
+      shows.push({
+        ...obraData,
+        id: obraData.id || Date.now().toString(),
+        likes: 0,
+        comentarios: [],
+        criticas: []
+      });
     }
 
     localStorage.setItem(CONFIG.STORAGE_KEYS.SHOWS, JSON.stringify(shows));
@@ -134,22 +143,99 @@ export const apiService = {
    */
   async deleteCartelera(id) {
     try {
-      const res = await fetch(`/api/carteleras?id=${id}`, { method: 'DELETE' });
-      if (res.ok) return true;
+      const res = await fetch(`api/carteleras.php?id=${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        await this.getCarteleras();
+        return true;
+      }
     } catch (e) {}
-
-    if (typeof google !== 'undefined' && google.script && google.script.run) {
-      return new Promise((resolve) => {
-        google.script.run
-          .withSuccessHandler(() => resolve(true))
-          .eliminarCartelera(id);
-      });
-    }
 
     let shows = store.getState().shows || [];
     shows = shows.filter((s) => s.id.toString() !== id.toString());
     localStorage.setItem(CONFIG.STORAGE_KEYS.SHOWS, JSON.stringify(shows));
     store.setState({ shows: [...shows] });
+    return true;
+  },
+
+  /**
+   * Obtiene la ficha informativa del teatro y sus estadísticas en vivo
+   */
+  async getTeatroInfo() {
+    try {
+      const res = await fetch('api/teatros.php');
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.teatro) {
+          return data;
+        }
+      }
+    } catch (e) {}
+
+    // Fallback local
+    const orders = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.ORDERS) || '[]');
+    const totalVendidas = CONFIG.TEATRO_DEFAULT.estadisticas.butacasVendidas + orders.length;
+
+    return {
+      teatro: CONFIG.TEATRO_DEFAULT,
+      estadisticas: {
+        ...CONFIG.TEATRO_DEFAULT.estadisticas,
+        butacasVendidas: totalVendidas,
+        totalRecaudadoUSD: orders.reduce((sum, o) => sum + (parseFloat(o.precioUSD) || 0), 0)
+      }
+    };
+  },
+
+  /**
+   * Registra like, comentario o crítica con distinción de roles
+   */
+  async addInteraccion(idObra, tipo, valor = '', estrellas = 5) {
+    const user = store.getState().user;
+    const nombreAutor = user ? user.nombre : 'Visitante';
+    const rolAutor = user ? user.rol : CONFIG.ROLES.VISITOR;
+
+    try {
+      await fetch('api/interacciones.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id_obra: idObra,
+          id_usuario: user ? user.id : null,
+          nombre_autor: nombreAutor,
+          rol_autor: rolAutor,
+          tipo,
+          valor,
+          estrellas
+        })
+      });
+    } catch (e) {}
+
+    // Actualizar local
+    const interactions = this.getInteractions();
+    if (!interactions[idObra]) {
+      interactions[idObra] = { likes: 0, comentarios: [], criticas: [] };
+    }
+
+    if (tipo === 'like') {
+      interactions[idObra].likes += 1;
+    } else if (tipo === 'critica' || rolAutor === CONFIG.ROLES.CRITIC) {
+      interactions[idObra].criticas.unshift({
+        autor: nombreAutor,
+        rol: rolAutor,
+        texto: valor,
+        estrellas,
+        esDestacada: true,
+        fecha: new Date().toISOString().split('T')[0]
+      });
+    } else if (tipo === 'comentario') {
+      interactions[idObra].comentarios.unshift({
+        autor: nombreAutor,
+        texto: valor,
+        fecha: new Date().toISOString().split('T')[0]
+      });
+    }
+
+    localStorage.setItem(CONFIG.STORAGE_KEYS.INTERACTIONS, JSON.stringify(interactions));
+    await this.getCarteleras();
     return true;
   },
 
@@ -162,15 +248,14 @@ export const apiService = {
   },
 
   /**
-   * Obtiene el historial de compras filtrado por correo
+   * Obtiene el historial de compras por correo
    */
   async getPurchasesByEmail(email) {
     if (!email) return [];
     const emailNorm = email.trim().toLowerCase();
 
-    // 1. Vercel Postgres
     try {
-      const res = await fetch(`/api/tickets?email=${encodeURIComponent(emailNorm)}`);
+      const res = await fetch(`api/tickets.php?email=${encodeURIComponent(emailNorm)}`);
       if (res.ok) {
         const purchases = await res.json();
         if (Array.isArray(purchases) && purchases.length > 0) {
@@ -179,17 +264,6 @@ export const apiService = {
       }
     } catch (e) {}
 
-    // 2. Apps Script
-    if (typeof google !== 'undefined' && google.script && google.script.run) {
-      return new Promise((resolve, reject) => {
-        google.script.run
-          .withSuccessHandler((compras) => resolve(compras || []))
-          .withFailureHandler((err) => reject(err))
-          .obtenerComprasUsuario(emailNorm);
-      });
-    }
-
-    // 3. Local Storage fallback
     try {
       const orders = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.ORDERS) || '[]');
       const filtered = orders.filter((o) => o.emailCliente && o.emailCliente.toLowerCase() === emailNorm);

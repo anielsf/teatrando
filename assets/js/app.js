@@ -38,15 +38,12 @@ class App {
     await currencyService.fetchExchangeRate();
     await this.reloadCartelera();
 
-    // 5. Determinar vista inicial
-    const currentUser = authService.getCurrentUser();
+    // 5. Determinar vista inicial (Inicio como punto de partida para todos, incluidos Visitantes)
     if (currentUser) {
       accountView.updateAccountUI();
       accountView.loadUserPurchases();
-      this.navigate('vista-inicio');
-    } else {
-      this.navigate('vista-mi-cuenta');
     }
+    this.navigate('vista-inicio');
   }
 
   navigate(viewId) {

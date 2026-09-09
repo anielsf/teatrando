@@ -4,30 +4,60 @@
     "obra": "Hamlet",
     "funcion": "Función de Gala",
     "genero": "Drama",
-    "sala": "Sala Rios Reyna",
+    "sala": "Sala Ríos Reyna",
+    "director": "Héctor Manrique",
+    "duracionMin": 110,
+    "edadMinima": "+14 años",
     "fecha": "2026-09-15",
     "hora": "19:30",
     "precioUSD": 25.00,
-    "sinopsis": "La clásica tragedia de William Shakespeare sobre la venganza, la traición y la locura en la corte de Dinamarca.",
-    "reparto": "Carlos Cruz, Marisa Román, Héctor Manrique",
+    "sinopsis": "La emblemática tragedia de William Shakespeare que indaga en la traición, el poder y la venganza moral del Príncipe de Dinamarca tras el regicidio de su padre.",
+    "reparto": "Carlos Cruz, Marisa Román, Héctor Manrique, Antonio Delli",
     "imagen": "https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?auto=format&fit=crop&w=600&q=80",
-    "likes": 14,
-    "comentarios": ["Excelente producción", "Imperdible puesta en escena"]
+    "likes": 18,
+    "comentarios": [
+      { "autor": "Mariana Valera", "texto": "Excelente función, la acústica de la sala es fantástica.", "fecha": "2026-09-02" }
+    ],
+    "criticas": [
+      {
+        "autor": "Armando Reverón (Crítica Cultural)",
+        "rol": "Crítico",
+        "texto": "Una puesta en escena sublime que honra la intensidad lírica de Shakespeare. El desempeño actoral en el tercer acto es antológico.",
+        "estrellas": 5,
+        "esDestacada": true,
+        "fecha": "2026-09-01"
+      }
+    ]
   },
   {
     "id": "2",
     "obra": "El Fantasma de la Ópera",
     "funcion": "Viernes Estelar",
     "genero": "Musical",
-    "sala": "Teatro Municipal",
+    "sala": "Sala Principal",
+    "director": "Federico Pacanins",
+    "duracionMin": 130,
+    "edadMinima": "Todo público",
     "fecha": "2026-09-18",
     "hora": "20:00",
     "precioUSD": 35.00,
-    "sinopsis": "Un misterioso prodigio musical desfigurado habita en el laberinto debajo de la Ópera de París y se obsesiona con una joven soprano.",
-    "reparto": "Giannina Pavone, Beto Baralt, Humberto Baralt",
+    "sinopsis": "Un misterioso genio musical atormentado habita en las catacumbas de la Ópera de París y se obsesiona con la talentosa soprano Christine Daaé.",
+    "reparto": "Giannina Pavone, Beto Baralt, Humberto Baralt, Gaspar Colón",
     "imagen": "https://images.unsplash.com/photo-1469488865564-c2de10f69f96?auto=format&fit=crop&w=600&q=80",
-    "likes": 28,
-    "comentarios": ["Las voces son sublimes"]
+    "likes": 34,
+    "comentarios": [
+      { "autor": "Carlos Mendoza", "texto": "Las voces y la orquesta son simplemente sublimes.", "fecha": "2026-09-03" }
+    ],
+    "criticas": [
+      {
+        "autor": "Armando Reverón (Crítica Cultural)",
+        "rol": "Crítico",
+        "texto": "La producción orquestal y el diseño de iluminación logran un espectáculo envolvente de primer nivel internacional.",
+        "estrellas": 5,
+        "esDestacada": true,
+        "fecha": "2026-09-02"
+      }
+    ]
   },
   {
     "id": "3",
@@ -35,13 +65,19 @@
     "funcion": "Domingo de Risas",
     "genero": "Comedia",
     "sala": "Teatro Trasnocho",
+    "director": "Armando Álvarez",
+    "duracionMin": 95,
+    "edadMinima": "+12 años",
     "fecha": "2026-09-20",
     "hora": "18:00",
     "precioUSD": 15.00,
-    "sinopsis": "Seis pacientes que padecen trastorno obsesivo-compulsivo se conocen en la sala de espera de un afamado psiquiatra con el fin de resolver sus problemas.",
-    "reparto": "Sócrates Serrano, Sonia Villamizar, Laureano Olivarez",
+    "sinopsis": "Seis pacientes que padecen diferentes tipos de Trastorno Obsesivo Compulsivo (TOC) coinciden en la sala de espera de un reputado psiquiatra que se retrasa.",
+    "reparto": "Sócrates Serrano, Sonia Villamizar, Laureano Olivarez, Diana Volpe",
     "imagen": "https://images.unsplash.com/photo-1514306191717-452ec28c7814?auto=format&fit=crop&w=600&q=80",
-    "likes": 9,
-    "comentarios": ["Muy divertida para ir en familia"]
+    "likes": 12,
+    "comentarios": [
+      { "autor": "Espectador", "texto": "Risas garantizadas de principio a fin.", "fecha": "2026-09-04" }
+    ],
+    "criticas": []
   }
 ]
