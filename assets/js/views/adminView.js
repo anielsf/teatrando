@@ -199,7 +199,7 @@ export const adminView = {
     };
 
     try {
-      await fetch('api/teatros.php', {
+      await fetch('/api/teatros', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(teatroData)
