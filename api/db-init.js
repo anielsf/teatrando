@@ -44,18 +44,45 @@ export default async function handler(req, res) {
 
   try {
     await pool.query(`
+      CREATE TABLE IF NOT EXISTS teatros (
+        id SERIAL PRIMARY KEY,
+        nombre VARCHAR(255) NOT NULL,
+        ubicacion VARCHAR(255),
+        aforo INTEGER DEFAULT 650,
+        historia TEXT,
+        servicios TEXT,
+        normas TEXT,
+        telefono VARCHAR(64)
+      );
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS estadisticas_teatro (
+        id_teatro INTEGER PRIMARY KEY REFERENCES teatros(id),
+        total_funciones INTEGER DEFAULT 0,
+        butacas_vendidas INTEGER DEFAULT 0,
+        porcentaje_ocupacion NUMERIC(5, 2) DEFAULT 0,
+        obra_mas_vista VARCHAR(255)
+      );
+    `);
+
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS carteleras (
         id VARCHAR(64) PRIMARY KEY,
+        id_teatro INTEGER REFERENCES teatros(id) DEFAULT 1,
         obra VARCHAR(255) NOT NULL,
         funcion VARCHAR(255) NOT NULL,
+        genero VARCHAR(100),
+        sala VARCHAR(100),
+        director VARCHAR(255),
         fecha VARCHAR(32) NOT NULL,
         hora VARCHAR(32) NOT NULL,
         imagen TEXT,
         precio_usd NUMERIC(10, 2) NOT NULL,
-        genero VARCHAR(100),
-        sala VARCHAR(100),
         sinopsis TEXT,
         reparto TEXT,
+        duracion_min INTEGER DEFAULT 90,
+        edad_minima VARCHAR(64) DEFAULT 'Todo público',
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -64,8 +91,13 @@ export default async function handler(req, res) {
       CREATE TABLE IF NOT EXISTS interacciones (
         id SERIAL PRIMARY KEY,
         id_obra VARCHAR(64) NOT NULL,
+        id_usuario VARCHAR(64),
+        nombre_autor VARCHAR(255) DEFAULT 'Anónimo',
+        rol_autor VARCHAR(64) DEFAULT 'Usuario',
         tipo VARCHAR(32) NOT NULL,
         valor TEXT,
+        estrellas INTEGER DEFAULT 5,
+        es_destacada BOOLEAN DEFAULT FALSE,
         fecha_registro TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -76,8 +108,22 @@ export default async function handler(req, res) {
         nombre VARCHAR(255) NOT NULL,
         email VARCHAR(255) UNIQUE NOT NULL,
         password TEXT NOT NULL,
-        rol VARCHAR(64) DEFAULT 'Consumidor',
-        plan VARCHAR(64) DEFAULT 'Gratuito',
+        rol VARCHAR(64) DEFAULT 'Usuario',
+        plan_suscripcion VARCHAR(64) DEFAULT 'Plan Básico (Gratis)',
+        fecha_registro TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS suscripciones (
+        id SERIAL PRIMARY KEY,
+        id_usuario VARCHAR(64),
+        plan VARCHAR(64) NOT NULL,
+        precio_usd NUMERIC(10, 2),
+        precio_ves NUMERIC(10, 2),
+        tasa_bcv NUMERIC(10, 2),
+        ref_pago VARCHAR(128),
+        estado VARCHAR(32) DEFAULT 'Activa',
         fecha_registro TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -104,13 +150,30 @@ export default async function handler(req, res) {
       );
     `);
 
+    const teatroCount = await pool.query('SELECT count(*) FROM teatros;');
+    if (parseInt(teatroCount.rows[0].count, 10) === 0) {
+      await pool.query(`
+        INSERT INTO teatros (id, nombre, ubicacion, aforo, historia, servicios, normas, telefono) VALUES
+        (1, 'Teatro Municipal de Caracas', 'Centro de Caracas', 650,
+         'Teatro histórico neoclásico venezolano.',
+         'Estacionamiento, Cafetería, Acceso para sillas de ruedas',
+         'Puntualidad y teléfonos en silencio.', '+58 212 555-8328');
+      `);
+      await pool.query(`SELECT setval('teatros_id_seq', 1, true);`);
+
+      await pool.query(`
+        INSERT INTO estadisticas_teatro (id_teatro, total_funciones, butacas_vendidas, porcentaje_ocupacion, obra_mas_vista)
+        VALUES (1, 24, 5280, 91.25, 'El Fantasma de la Ópera');
+      `);
+    }
+
     const countResult = await pool.query('SELECT count(*) FROM carteleras;');
     if (parseInt(countResult.rows[0].count, 10) === 0) {
       await pool.query(`
-        INSERT INTO carteleras (id, obra, funcion, fecha, hora, imagen, precio_usd, genero, sala, sinopsis, reparto) VALUES
-        ('1', 'Hamlet', 'Función de Gala', '2026-09-15', '19:30', 'https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?auto=format&fit=crop&w=600&q=80', 25.00, 'Drama', 'Sala Rios Reyna', 'La clásica tragedia de William Shakespeare sobre la venganza y la traición.', 'Carlos Cruz, Marisa Román, Héctor Manrique'),
-        ('2', 'El Fantasma de la Ópera', 'Viernes Estelar', '2026-09-18', '20:00', 'https://images.unsplash.com/photo-1469488865564-c2de10f69f96?auto=format&fit=crop&w=600&q=80', 35.00, 'Musical', 'Teatro Municipal', 'Un misterioso prodigio musical habita en el laberinto debajo de la Ópera de París.', 'Giannina Pavone, Beto Baralt, Humberto Baralt'),
-        ('3', 'TOC TOC', 'Domingo de Risas', '2026-09-20', '18:00', 'https://images.unsplash.com/photo-1514306191717-452ec28c7814?auto=format&fit=crop&w=600&q=80', 15.00, 'Comedia', 'Teatro Trasnocho', 'Seis pacientes que padecen TOC se conocen en la sala de espera de un psiquiatra.', 'Sócrates Serrano, Sonia Villamizar, Laureano Olivarez');
+        INSERT INTO carteleras (id, id_teatro, obra, funcion, genero, sala, director, fecha, hora, imagen, precio_usd, sinopsis, reparto, duracion_min, edad_minima) VALUES
+        ('1', 1, 'Hamlet', 'Función de Gala', 'Drama', 'Sala Rios Reyna', 'Héctor Manrique', '2026-09-15', '19:30', 'https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?auto=format&fit=crop&w=600&q=80', 25.00, 'La clásica tragedia de William Shakespeare sobre la venganza y la traición.', 'Carlos Cruz, Marisa Román, Héctor Manrique', 150, 'Todo público'),
+        ('2', 1, 'El Fantasma de la Ópera', 'Viernes Estelar', 'Musical', 'Teatro Municipal', 'Beto Baralt', '2026-09-18', '20:00', 'https://images.unsplash.com/photo-1469488865564-c2de10f69f96?auto=format&fit=crop&w=600&q=80', 35.00, 'Un misterioso prodigio musical habita en el laberinto debajo de la Ópera de París.', 'Giannina Pavone, Beto Baralt, Humberto Baralt', 140, 'Todo público'),
+        ('3', 1, 'TOC TOC', 'Domingo de Risas', 'Comedia', 'Teatro Trasnocho', 'Laureano Olivarez', '2026-09-20', '18:00', 'https://images.unsplash.com/photo-1514306191717-452ec28c7814?auto=format&fit=crop&w=600&q=80', 15.00, 'Seis pacientes que padecen TOC se conocen en la sala de espera de un psiquiatra.', 'Sócrates Serrano, Sonia Villamizar, Laureano Olivarez', 90, 'Todo público');
       `);
     }
 

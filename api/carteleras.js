@@ -14,48 +14,57 @@ module.exports = async function handler(req, res) {
     if (req.method === 'GET') {
       const { rows } = await query(`
         SELECT c.*,
+          t.nombre AS "teatroNombre", t.ubicacion AS "teatroUbicacion", t.aforo AS "teatroAforo",
           COALESCE(
             json_agg(DISTINCT jsonb_build_object(
               'id', i.id, 'nombre_autor', i.nombre_autor, 'rol_autor', i.rol_autor,
-              'texto', i.texto, 'estrellas', i.estrellas, 'fecha', i.fecha
+              'texto', i.valor, 'estrellas', i.estrellas, 'esDestacada', i.es_destacada, 'fecha', i.fecha_registro
             )) FILTER (WHERE i.id IS NOT NULL AND i.tipo = 'critica'), '[]'
           ) AS criticas,
           COALESCE(
             json_agg(DISTINCT jsonb_build_object(
-              'id', cm.id, 'nombre_autor', cm.nombre_autor, 'texto', cm.texto, 'fecha', cm.fecha
+              'id', cm.id, 'nombre_autor', cm.nombre_autor, 'texto', cm.valor, 'fecha', cm.fecha_registro
             )) FILTER (WHERE cm.id IS NOT NULL AND cm.tipo = 'comentario'), '[]'
-          ) AS comentarios
+          ) AS comentarios,
+          COUNT(DISTINCT lk.id) FILTER (WHERE lk.tipo = 'like') AS likes
         FROM carteleras c
-        LEFT JOIN interacciones i ON i.id_cartelera = c.id
-        LEFT JOIN interacciones cm ON cm.id_cartelera = c.id
-        GROUP BY c.id
+        LEFT JOIN teatros t ON c.id_teatro = t.id
+        LEFT JOIN interacciones i ON i.id_obra = c.id
+        LEFT JOIN interacciones cm ON cm.id_obra = c.id
+        LEFT JOIN interacciones lk ON lk.id_obra = c.id
+        GROUP BY c.id, t.nombre, t.ubicacion, t.aforo
         ORDER BY c.fecha ASC, c.hora ASC
       `);
       return res.status(200).json(rows);
     }
 
     if (req.method === 'POST') {
-      const { id, obra, funcion, genero, sala, director, fecha, hora, precioUSD,
+      const { id, id_teatro, obra, funcion, genero, sala, director, fecha, hora, precioUSD,
               sinopsis, reparto, imagen, duracionMin, edadMinima } = req.body;
+
+      if (!obra || !funcion) {
+        return res.status(400).json({ success: false, error: 'Obra y función son requeridos' });
+      }
 
       if (id) {
         await query(
-          `UPDATE carteleras SET obra=$1, funcion=$2, genero=$3, sala=$4, director=$5,
-           fecha=$6, hora=$7, precio_usd=$8, sinopsis=$9, reparto=$10, imagen=$11,
-           duracion_min=$12, edad_minima=$13 WHERE id=$14`,
-          [obra, funcion, genero, sala, director, fecha, hora, precioUSD,
+          `UPDATE carteleras SET id_teatro=$1, obra=$2, funcion=$3, genero=$4, sala=$5, director=$6,
+           fecha=$7, hora=$8, precio_usd=$9, sinopsis=$10, reparto=$11, imagen=$12,
+           duracion_min=$13, edad_minima=$14 WHERE id=$15`,
+          [id_teatro || 1, obra, funcion, genero, sala, director, fecha, hora, precioUSD,
            sinopsis, reparto, imagen, duracionMin || 90, edadMinima || 'Todo público', id]
         );
         return res.status(200).json({ success: true, id });
       } else {
-        const { rows } = await query(
-          `INSERT INTO carteleras (obra, funcion, genero, sala, director, fecha, hora, precio_usd,
+        const newId = Date.now().toString();
+        await query(
+          `INSERT INTO carteleras (id, id_teatro, obra, funcion, genero, sala, director, fecha, hora, precio_usd,
            sinopsis, reparto, imagen, duracion_min, edad_minima)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING id`,
-          [obra, funcion, genero, sala, director, fecha, hora, precioUSD,
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+          [newId, id_teatro || 1, obra, funcion, genero, sala, director, fecha, hora, precioUSD,
            sinopsis, reparto, imagen, duracionMin || 90, edadMinima || 'Todo público']
         );
-        return res.status(201).json({ success: true, id: rows[0].id });
+        return res.status(201).json({ success: true, id: newId });
       }
     }
 
