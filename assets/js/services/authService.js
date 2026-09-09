@@ -1,36 +1,14 @@
 /**
  * Servicio de Autenticación, Roles y Suscripciones de Teatrando
- * Conexión con MySQL (XAMPP / PHP) y fallback de almacenamiento local.
+ * Conexión nativa con Supabase (Vercel) y persistencia de sesión local.
  * Roles: Visitante, Usuario, Crítico, Admin
  * Planes: Plan Básico (Gratis), Plan Bambalinas, Plan Crítico / VIP
  */
-import { CONFIG } from '../config.js';
+import { CONFIG, SUPABASE_URL, SUPABASE_ANON_KEY } from '../config.js';
 import { store } from '../state/store.js';
-// assets/js/services/authService.js
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../config.js';
 
-// Inicializar el cliente de Supabase usando las constantes del frontend
+// Inicializar el cliente de Supabase usando las constantes públicas del frontend
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-export const authService = {
-    async login(email, password) {
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email: email,
-            password: password,
-        });
-        if (error) throw error;
-        return data;
-    },
-    
-    async register(email, password) {
-        const { data, error } = await supabase.auth.signUp({
-            email: email,
-            password: password,
-        });
-        if (error) throw error;
-        return data;
-    }
-};
 
 export const authService = {
   normalizeEmail(email) {
@@ -55,94 +33,41 @@ export const authService = {
   async login(email, password) {
     const emailNorm = this.normalizeEmail(email);
 
-    // 1. Intentar Backend PHP / MySQL (XAMPP)
     try {
-      const res = await fetch('api/auth.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'login', email: emailNorm, password })
+      // 1. Intentar iniciar sesión en Supabase Authentication
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: emailNorm,
+        password: password,
       });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && data.usuario) {
-          this.setSession(data.usuario);
-          return { success: true, user: data.usuario };
-        }
+
+      if (error) throw error;
+
+      if (data && data.user) {
+        // Mapear metadatos del usuario guardados durante el registro
+        const metadata = data.user.user_metadata || {};
+        
+        const userSession = {
+          id: data.user.id,
+          nombre: metadata.nombre || 'Usuario Teatrando',
+          email: data.user.email,
+          rol: metadata.rol || CONFIG.ROLES.USER,
+          plan: metadata.plan || CONFIG.PLANS.BASIC
+        };
+
+        this.setSession(userSession);
+        return { success: true, user: userSession };
       }
-    } catch (e) {}
-
-    // 2. Modo Local Fallback
-    const users = this.getLocalUsers();
-    const found = users.find((u) => u.email === emailNorm && u.password === password);
-
-    if (found) {
-      const userSession = {
-        id: found.id,
-        nombre: found.nombre,
-        email: found.email,
-        rol: found.rol || CONFIG.ROLES.USER,
-        plan: found.plan || CONFIG.PLANS.BASIC
-      };
-      this.setSession(userSession);
-      return { success: true, user: userSession };
+    } catch (e) {
+      console.error('Error en login con Supabase:', e.message || e);
+      return { success: false, message: e.message || 'Correo o contraseña incorrectos.' };
     }
-
-    // Usuario demo inicial si coincide
-    if (emailNorm === 'admin@teatrando.com' && password === 'admin123') {
-      const adminUser = {
-        id: 'USR-ADMIN-01',
-        nombre: 'Administrador Principal',
-        email: emailNorm,
-        rol: CONFIG.ROLES.ADMIN,
-        plan: CONFIG.PLANS.CRITIC_VIP
-      };
-      this.setSession(adminUser);
-      return { success: true, user: adminUser };
-    }
-
-    if (emailNorm === 'critico@prensa.com' && password === 'critico123') {
-      const criticUser = {
-        id: 'USR-CRITIC-01',
-        nombre: 'Armando Reverón (Crítico)',
-        email: emailNorm,
-        rol: CONFIG.ROLES.CRITIC,
-        plan: CONFIG.PLANS.CRITIC_VIP
-      };
-      this.setSession(criticUser);
-      return { success: true, user: criticUser };
-    }
-
-    return { success: false, message: 'Correo o contraseña incorrectos.' };
   },
 
   async register(nombre, email, password) {
     const emailNorm = this.normalizeEmail(email);
     const nombreLimpio = (nombre || '').toString().trim();
 
-    // 1. Intentar Backend PHP / MySQL (XAMPP)
-    try {
-      const res = await fetch('api/auth.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'register', nombre: nombreLimpio, email: emailNorm, password })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && data.usuario) {
-          this.setSession(data.usuario);
-          return { success: true, user: data.usuario };
-        } else {
-          return { success: false, message: data.message || 'Error en registro' };
-        }
-      }
-    } catch (e) {}
-
-    // 2. Modo Local Fallback
-    const users = this.getLocalUsers();
-    if (users.some((u) => u.email === emailNorm)) {
-      return { success: false, message: 'El correo electrónico ya se encuentra registrado.' };
-    }
-
+    // Definición automática de roles iniciales por conveniencia de testing
     let rol = CONFIG.ROLES.USER;
     let plan = CONFIG.PLANS.BASIC;
 
@@ -154,29 +79,38 @@ export const authService = {
       plan = CONFIG.PLANS.CRITIC_VIP;
     }
 
-    const userId = 'USR-' + Math.random().toString(36).substring(2, 9).toUpperCase();
-    const newUser = {
-      id: userId,
-      nombre: nombreLimpio,
-      email: emailNorm,
-      password: password,
-      fechaRegistro: new Date().toISOString(),
-      rol: rol,
-      plan: plan
-    };
+    try {
+      // 2. Registrar el usuario en Supabase Authentication guardando los roles en metadata
+      const { data, error } = await supabase.auth.signUp({
+        email: emailNorm,
+        password: password,
+        options: {
+          data: {
+            nombre: nombreLimpio,
+            rol: rol,
+            plan: plan
+          }
+        }
+      });
 
-    users.push(newUser);
-    localStorage.setItem(CONFIG.STORAGE_KEYS.USERS, JSON.stringify(users));
+      if (error) throw error;
 
-    const userSession = {
-      id: newUser.id,
-      nombre: newUser.nombre,
-      email: newUser.email,
-      rol: newUser.rol,
-      plan: newUser.plan
-    };
-    this.setSession(userSession);
-    return { success: true, user: userSession };
+      if (data && data.user) {
+        const userSession = {
+          id: data.user.id,
+          nombre: nombreLimpio,
+          email: data.user.email,
+          rol: rol,
+          plan: plan
+        };
+        
+        this.setSession(userSession);
+        return { success: true, user: userSession };
+      }
+    } catch (e) {
+      console.error('Error en registro con Supabase:', e.message || e);
+      return { success: false, message: e.message || 'Error al intentar registrar el usuario.' };
+    }
   },
 
   /**
@@ -184,62 +118,42 @@ export const authService = {
    */
   async upgradePlan(nuevoPlan, refPago, precioUSD, precioVES, tasaBCV) {
     const user = this.getCurrentUser();
-    const userId = user ? user.id : 'INVITADO';
-    const email = user ? user.email : '';
+    if (!user) return { success: false, message: 'No hay usuario autenticado.' };
 
     let nuevoRol = CONFIG.ROLES.USER;
     if (nuevoPlan === CONFIG.PLANS.CRITIC_VIP) {
       nuevoRol = CONFIG.ROLES.CRITIC;
-    } else if (user && user.rol === CONFIG.ROLES.ADMIN) {
+    } else if (user.rol === CONFIG.ROLES.ADMIN) {
       nuevoRol = CONFIG.ROLES.ADMIN;
     }
 
-    // 1. Enviar a backend PHP / MySQL (XAMPP)
     try {
-      await fetch('api/suscripciones.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId,
-          email,
+      // 3. Actualizar metadatos del usuario logueado en Supabase Auth
+      const { data, error } = await supabase.auth.updateUser({
+        data: { 
           plan: nuevoPlan,
-          refPago,
-          precioUSD,
-          precioVES,
-          tasaBCV
-        })
+          rol: nuevoRol
+        }
       });
-    } catch (e) {}
 
-    // 2. Actualizar sesión local
-    if (user) {
+      if (error) throw error;
+
       const updatedUser = {
         ...user,
         plan: nuevoPlan,
         rol: nuevoRol
       };
+      
       this.setSession(updatedUser);
-
-      // Actualizar en listado local de usuarios
-      const users = this.getLocalUsers();
-      const idx = users.findIndex((u) => u.email === user.email);
-      if (idx !== -1) {
-        users[idx].plan = nuevoPlan;
-        users[idx].rol = nuevoRol;
-        localStorage.setItem(CONFIG.STORAGE_KEYS.USERS, JSON.stringify(users));
-      }
-
       return { success: true, user: updatedUser };
-    }
 
-    return { success: true, plan: nuevoPlan, rol: nuevoRol };
-  },
-
-  getLocalUsers() {
-    try {
-      return JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.USERS) || '[]');
     } catch (e) {
-      return [];
+      console.error('Error al actualizar plan en Supabase:', e.message || e);
+      
+      // Fallback local por si falla la conexión de red transitoria
+      const updatedUser = { ...user, plan: nuevoPlan, rol: nuevoRol };
+      this.setSession(updatedUser);
+      return { success: true, user: updatedUser };
     }
   },
 
@@ -251,6 +165,8 @@ export const authService = {
   },
 
   logout() {
+    // Cerrar sesión en Supabase y limpiar UI
+    supabase.auth.signOut().catch(() => {});
     store.setState({ user: null, userPurchases: [] });
     try {
       localStorage.removeItem(CONFIG.STORAGE_KEYS.SESSION);

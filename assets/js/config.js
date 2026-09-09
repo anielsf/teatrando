@@ -113,8 +113,8 @@ export const CONFIG = {
 
 // 1. Configuración de Supabase para el Frontend
 // (Como es Vanilla JS sin empaquetador, debes poner tus credenciales públicas de Supabase directamente aquí)
-export const SUPABASE_URL = "https://TU_PROYECTO.supabase.co"; 
-export const SUPABASE_ANON_KEY = "TU_CLAVE_ANON_PUBLICA_DE_SUPABASE";
+export const SUPABASE_URL = "https://muqhnbmaqprokczltdrj.supabase.co"; 
+export const SUPABASE_ANON_KEY = "sb_publishable_BgxJ27gmu6KQk-8QH_6MIQ_OGVlg6TW";
 
 // 2. Otras configuraciones globales del proyecto que ya tengas
 export const CONFIG = {
