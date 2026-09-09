@@ -1,11 +1,20 @@
 /**
  * Configuración global y esquema de base de datos de Teatrando
- * Adaptado para MySQL (XAMPP), nuevos roles y planes de suscripción
+ * Adaptado para Supabase en Vercel, roles y planes de suscripción
  */
+
+// 1. Configuración de Supabase para el Frontend
+// (Como es Vanilla JS sin empaquetador, tus credenciales públicas van directamente aquí)
+export const SUPABASE_URL = "https://muqhnbmaqprokczltdrj.supabase.co"; 
+export const SUPABASE_ANON_KEY = "sb_publishable_BgxJ27gmu6KQk-8QH_6MIQ_OGVlg6TW";
+
+// 2. Objeto de configuración global único (Unificado)
 export const CONFIG = {
   APP_NAME: 'Teatrando',
   SLOGAN: 'Vive la escena',
   VERSION: '2.0.0',
+  API_URL: '/api',
+  DEFAULT_CURRENCY: 'VES',
   DEFAULT_BCV_RATE: 798.33,
   TOTAL_SEATS_PER_ROOM: 40,
 
@@ -109,16 +118,4 @@ export const CONFIG = {
     SUBSCRIPTIONS: 'teatrando_suscripciones',
     CACHE_BCV: 'teatrando_cache_bcv'
   }
-};
-
-// 1. Configuración de Supabase para el Frontend
-// (Como es Vanilla JS sin empaquetador, debes poner tus credenciales públicas de Supabase directamente aquí)
-export const SUPABASE_URL = "https://muqhnbmaqprokczltdrj.supabase.co"; 
-export const SUPABASE_ANON_KEY = "sb_publishable_BgxJ27gmu6KQk-8QH_6MIQ_OGVlg6TW";
-
-// 2. Otras configuraciones globales del proyecto que ya tengas
-export const CONFIG = {
-    API_URL: '/api',
-    DEFAULT_CURRENCY: 'VES',
-    // ... tus otras configuraciones
 };
