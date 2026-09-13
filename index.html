@@ -63,7 +63,7 @@
 <body>
 
   <!-- Barra de navegación global -->
-<nav id="navbar-principal" class="navbar navbar-expand-lg navbar-teatro mb-4">
+  <nav id="navbar-principal" class="navbar navbar-expand-lg navbar-teatro mb-4">
     <div class="container">
       <a class="navbar-brand marca-teatro" href="#" data-navigate="vista-analitica">
         <span class="mascara">🎭</span> TEATRANDO
@@ -83,6 +83,30 @@
   </nav>
 
   <main>
+    <!-- NUEVO: 0. Vista de Analítica -->
+    <section id="vista-analitica" class="vista container">
+      <h3 class="titulo-seccion mb-4 pb-2">Panel de Analítica y Rendimiento</h3>
+      <div class="row">
+        <!-- Gráfico 1 -->
+        <div class="col-md-6 mb-4">
+          <div class="card p-3 h-100" style="border: 1px solid var(--line);">
+            <h5 class="text-center text-light mb-3">Ventas de Entradas (Mensual)</h5>
+            <canvas id="grafico-ventas"></canvas>
+          </div>
+        </div>
+        <!-- Gráfico 2 -->
+        <div class="col-md-6 mb-4">
+          <div class="card p-3 h-100" style="border: 1px solid var(--line);">
+            <h5 class="text-center text-light mb-3">Ocupación por Obra (%)</h5>
+            <canvas id="grafico-ocupacion"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="alert alert-info text-center" style="background: rgba(201, 162, 75, 0.1); border-color: var(--gold); color: var(--gold);">
+        ℹ️ Modo Analítica Activo. Las vistas públicas de compra, cuenta y cartelera se encuentran temporalmente inhabilitadas.
+      </div>
+    </section>
+
     <!-- 1. Vista de Inicio (Hero + Destacados) -->
     <section id="vista-inicio" class="vista container">
       <div class="hero-teatro mb-4">
@@ -262,7 +286,7 @@
     </section>
 
     <!-- 5. Área de Cliente / Autenticación y Membresías -->
-    <section id="vista-mi-cuenta" class="vista activa container">
+    <section id="vista-mi-cuenta" class="vista container">
       <!-- Panel de Usuario Autenticado -->
       <div id="bloque-sesion-usuario" style="display: none;">
         <h3 class="titulo-seccion mb-4 pb-2">Área de Cliente</h3>
@@ -453,7 +477,7 @@
               <input type="text" id="admin-edad" class="form-control" placeholder="Todo público / +14" value="Todo público">
             </div>
             
-            <!-- NUEVO CAMPO: Selector de Visibilidad -->
+            <!-- Selector de Visibilidad -->
             <div class="col-md-3 mb-3">
               <label class="campo-label" for="admin-visibilidad">Estado en Cartelera</label>
               <select id="admin-visibilidad" class="form-select">
@@ -530,5 +554,47 @@
 
   <!-- Script Principal de la Aplicación Modular -->
   <script type="module" src="assets/js/app.js"></script>
+
+  <!-- Inicialización básica de gráficos de analítica (Ejemplo visual) -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Gráfico de Ventas
+      const ctxVentas = document.getElementById('grafico-ventas');
+      if (ctxVentas) {
+        new Chart(ctxVentas, {
+          type: 'line',
+          data: {
+            labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
+            datasets: [{
+              label: 'Ingresos (USD)',
+              data: [1200, 1900, 1500, 2200, 1800, 2600],
+              borderColor: '#c9a24b',
+              backgroundColor: 'rgba(201, 162, 75, 0.2)',
+              borderWidth: 2,
+              fill: true
+            }]
+          },
+          options: { responsive: true, color: '#fff' }
+        });
+      }
+
+      // Gráfico de Ocupación
+      const ctxOcupacion = document.getElementById('grafico-ocupacion');
+      if (ctxOcupacion) {
+        new Chart(ctxOcupacion, {
+          type: 'bar',
+          data: {
+            labels: ['Hamlet', 'El Cascanueces', 'Improv', 'Monólogos'],
+            datasets: [{
+              label: 'Ocupación (%)',
+              data: [85, 95, 60, 75],
+              backgroundColor: ['#1a73e8', '#c9a24b', '#e83e8c', '#28a745']
+            }]
+          },
+          options: { responsive: true, color: '#fff' }
+        });
+      }
+    });
+  </script>
 </body>
 </html>
