@@ -40,16 +40,25 @@ class App {
     await currencyService.fetchExchangeRate();
     await this.reloadCartelera();
 
-    // 5. Determinar vista inicial (Inicio como punto de partida para todos, incluidos Visitantes)
+    // 5. Determinar vista inicial
     const currentUser = authService.getCurrentUser();
     if (currentUser) {
       accountView.updateAccountUI();
       accountView.loadUserPurchases();
     }
-    this.navigate('vista-inicio');
+    
+    // Inicia en analítica o la vista habilitada por defecto
+    this.navigate('vista-analitica'); 
   }
 
   navigate(viewId) {
+    // Validación de Feature Flags antes de permitir la navegación
+    if (FEATURES[viewId] === false) {
+        console.warn(`[Seguridad] La sección ${viewId} se encuentra deshabilitada.`);
+        alert('Esta sección se encuentra temporalmente deshabilitada.');
+        return;
+    }
+
     const vistas = document.querySelectorAll('.vista');
     vistas.forEach((v) => v.classList.remove('activa'));
 
@@ -68,8 +77,16 @@ class App {
 
   async reloadCartelera() {
     const shows = await apiService.getCarteleras();
+    
+    // Filtrado local de carteleras visibles para el cliente
+    const cartelerasVisibles = shows.filter(obra => obra.visible === true);
+
     renderHomeView(this.navigate, this.handleSelectShow);
-    carteleraView.renderCartelera(shows);
+    
+    // Inyectar solo las obras visibles en las vistas públicas
+    carteleraView.renderCartelera(cartelerasVisibles); 
+    
+    // Inyectar todas las obras (incluidas las ocultas) en la vista de administrador
     adminView.renderTable(shows);
   }
 
@@ -111,13 +128,3 @@ document.addEventListener('DOMContentLoaded', () => {
   const app = new App();
   app.init();
 });
-
-function navigateTo(viewId) {
-    if (!FEATURES[viewId]) {
-        console.warn(`[Seguridad] La sección ${viewId} se encuentra deshabilitada.`);
-        renderAccessDeniedModal();
-        return;
-    }
-    // Lógica habitual de renderizado de vistas SPA
-    setActiveView(viewId);
-}

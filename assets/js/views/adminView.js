@@ -45,6 +45,12 @@ export const adminView = {
       const imgTag = item.imagen
         ? `<img src="${item.imagen}" width="60" height="60" style="object-fit:cover; border-radius:6px;" alt="${item.obra}">`
         : 'N/A';
+      
+      // Control de estado visible por defecto a 'true' si es indefinido
+      const esVisible = item.visible !== undefined ? item.visible : true;
+      const estadoBadge = esVisible 
+        ? `<span class="badge bg-success">Público</span>` 
+        : `<span class="badge bg-secondary">Oculto</span>`;
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
@@ -53,6 +59,7 @@ export const adminView = {
         <td>${item.genero}<br><small class="text-muted">${item.sala}</small></td>
         <td>${item.fecha}<br>${item.hora}</td>
         <td>${precioUSD}<br><small>${precioVES}</small></td>
+        <td class="text-center">${estadoBadge}</td>
         <td>
           <button class="btn btn-sm btn-info mb-1 me-1 btn-edit-obra" data-id="${item.id}">Editar</button>
           <button class="btn btn-sm btn-danger mb-1 btn-delete-obra" data-id="${item.id}">Eliminar</button>
@@ -78,6 +85,12 @@ export const adminView = {
     document.getElementById('admin-sinopsis').value = item.sinopsis || '';
     document.getElementById('admin-reparto').value = item.reparto || '';
     document.getElementById('admin-foto-actual').value = item.imagen || '';
+
+    // Llenar el nuevo campo de visibilidad en el formulario
+    const visibilidadSelect = document.getElementById('admin-visibilidad');
+    if (visibilidadSelect) {
+      visibilidadSelect.value = (item.visible !== undefined ? item.visible : true).toString();
+    }
 
     const directorInput = document.getElementById('admin-director');
     if (directorInput) directorInput.value = item.director || '';
@@ -106,6 +119,10 @@ export const adminView = {
       base64Image = await this.fileToBase64(fileInput.files[0]);
     }
 
+    // Extraer valor de visibilidad del formulario (por defecto true si no existe el select)
+    const visibilidadSelect = document.getElementById('admin-visibilidad');
+    const isVisible = visibilidadSelect ? (visibilidadSelect.value === 'true') : true;
+
     const id = document.getElementById('admin-id').value || Date.now().toString();
     const obraData = {
       id: id,
@@ -122,7 +139,8 @@ export const adminView = {
       duracionMin: parseInt(document.getElementById('admin-duracion')?.value, 10) || 90,
       edadMinima: document.getElementById('admin-edad')?.value || 'Todo público',
       fotoURLActual: document.getElementById('admin-foto-actual').value,
-      imagen: base64Image || document.getElementById('admin-foto-actual').value
+      imagen: base64Image || document.getElementById('admin-foto-actual').value,
+      visible: isVisible // Envío del nuevo estado al backend
     };
 
     try {
@@ -161,6 +179,11 @@ export const adminView = {
     document.getElementById('admin-sinopsis').value = '';
     document.getElementById('admin-reparto').value = '';
     document.getElementById('admin-foto-actual').value = '';
+    
+    // Restablecer el select de visibilidad
+    const visibilidadSelect = document.getElementById('admin-visibilidad');
+    if (visibilidadSelect) visibilidadSelect.value = 'true';
+
     const fileInput = document.getElementById('admin-foto');
     if (fileInput) fileInput.value = '';
 

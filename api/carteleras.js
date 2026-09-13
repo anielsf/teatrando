@@ -32,6 +32,7 @@ export default async function handler(req, res) {
         LEFT JOIN interacciones i ON i.id_obra = c.id
         LEFT JOIN interacciones cm ON cm.id_obra = c.id
         LEFT JOIN interacciones lk ON lk.id_obra = c.id
+        WHERE c.visible = true
         GROUP BY c.id, t.nombre, t.ubicacion, t.aforo
         ORDER BY c.fecha ASC, c.hora ASC
       `);
@@ -40,7 +41,7 @@ export default async function handler(req, res) {
 
     if (req.method === 'POST') {
       const { id, id_teatro, obra, funcion, genero, sala, director, fecha, hora, precioUSD,
-              sinopsis, reparto, imagen, duracionMin, edadMinima } = req.body;
+              sinopsis, reparto, imagen, duracionMin, edadMinima, visible } = req.body;
 
       if (!obra || !funcion) {
         return res.status(400).json({ success: false, error: 'Obra y función son requeridos' });
@@ -50,19 +51,21 @@ export default async function handler(req, res) {
         await query(
           `UPDATE carteleras SET id_teatro=$1, obra=$2, funcion=$3, genero=$4, sala=$5, director=$6,
            fecha=$7, hora=$8, precio_usd=$9, sinopsis=$10, reparto=$11, imagen=$12,
-           duracion_min=$13, edad_minima=$14 WHERE id=$15`,
+           duracion_min=$13, edad_minima=$14, visible=$15 WHERE id=$16`,
           [id_teatro || 1, obra, funcion, genero, sala, director, fecha, hora, precioUSD,
-           sinopsis, reparto, imagen, duracionMin || 90, edadMinima || 'Todo público', id]
+           sinopsis, reparto, imagen, duracionMin || 90, edadMinima || 'Todo público', 
+           visible !== undefined ? visible : true, id]
         );
         return res.status(200).json({ success: true, id });
       } else {
         const newId = Date.now().toString();
         await query(
           `INSERT INTO carteleras (id, id_teatro, obra, funcion, genero, sala, director, fecha, hora, precio_usd,
-           sinopsis, reparto, imagen, duracion_min, edad_minima)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+           sinopsis, reparto, imagen, duracion_min, edad_minima, visible)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
           [newId, id_teatro || 1, obra, funcion, genero, sala, director, fecha, hora, precioUSD,
-           sinopsis, reparto, imagen, duracionMin || 90, edadMinima || 'Todo público']
+           sinopsis, reparto, imagen, duracionMin || 90, edadMinima || 'Todo público', 
+           visible !== undefined ? visible : true]
         );
         return res.status(201).json({ success: true, id: newId });
       }

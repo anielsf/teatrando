@@ -452,6 +452,16 @@
               <label class="campo-label" for="admin-edad">Clasificación</label>
               <input type="text" id="admin-edad" class="form-control" placeholder="Todo público / +14" value="Todo público">
             </div>
+            
+            <!-- NUEVO CAMPO: Selector de Visibilidad -->
+            <div class="col-md-3 mb-3">
+              <label class="campo-label" for="admin-visibilidad">Estado en Cartelera</label>
+              <select id="admin-visibilidad" class="form-select">
+                <option value="true">Público (Visible)</option>
+                <option value="false">Oculto (Borrador)</option>
+              </select>
+            </div>
+
             <div class="col-md-3 mb-3">
               <label class="campo-label" for="admin-fecha">Fecha de función</label>
               <input type="date" id="admin-fecha" class="form-control" required>
@@ -491,6 +501,8 @@
               <th>Género / Sala</th>
               <th>Horario</th>
               <th>Precio</th>
+              <!-- NUEVA COLUMNA -->
+              <th class="text-center">Estado</th>
               <th>Acciones</th>
             </tr>
           </thead>
