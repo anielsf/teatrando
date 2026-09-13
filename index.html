@@ -26,7 +26,7 @@
 </head>
 <body>
 
-  <!-- Barra de navegación modificada para aislar la analítica -->
+  <!-- Barra de navegación global -->
   <nav id="navbar-principal" class="navbar navbar-expand-lg navbar-teatro mb-4">
     <div class="container">
       <a class="navbar-brand marca-teatro" href="#" data-navigate="vista-analitica">
@@ -45,42 +45,31 @@
   </nav>
 
   <main>
-    <!-- Vista de Analítica original que tenías en tu panel de control/estadísticas -->
+    <!-- Vista de Analítica Activa por Defecto -->
     <section id="vista-analitica" class="vista activa container">
-      <h3 class="titulo-seccion mb-4 pb-2">Panel de Control y Analítica</h3>
-      
-      <!-- Fila de Tarjetas de Resumen Estadístico -->
-      <div class="row g-3 mb-4">
-        <div class="col-md-4">
-          <div class="card p-3" style="border: 1px solid var(--line);">
-            <small class="text-muted">Ingresos Totales</small>
-            <h3 class="precio-usd mb-0">$12,450.00</h3>
-          </div>
-        </div>
-        <div class="col-md-4">
-          <div class="card p-3" style="border: 1px solid var(--line);">
-            <small class="text-muted">Entradas Vendidas</small>
-            <h3 class="text-light mb-0">842</h3>
-          </div>
-        </div>
-        <div class="col-md-4">
-          <div class="card p-3" style="border: 1px solid var(--line);">
-            <small class="text-muted">Ocupación Promedio</small>
-            <h3 class="text-info mb-0">78.4%</h3>
-          </div>
-        </div>
-      </div>
-
-      <!-- Contenedor Gráfico Original -->
+      <h3 class="titulo-seccion mb-4 pb-2">Panel de Analítica y Rendimiento</h3>
       <div class="row">
-        <div class="col-md-12 mb-4">
-          <div class="card p-3" style="border: 1px solid var(--line);">
-            <h5 class="text-light mb-3">Comportamiento de Asistencia por Función</h5>
-            <div style="position: relative; height: 320px; width: 100%;">
-              <canvas id="grafico-analitica-general"></canvas>
+        <!-- Gráfico 1 -->
+        <div class="col-md-6 mb-4">
+          <div class="card p-3 h-100" style="border: 1px solid var(--line);">
+            <h5 class="text-center text-light mb-3">Ventas de Entradas (Mensual)</h5>
+            <div style="position: relative; height: 300px; width: 100%;">
+              <canvas id="grafico-ventas"></canvas>
             </div>
           </div>
         </div>
+        <!-- Gráfico 2 -->
+        <div class="col-md-6 mb-4">
+          <div class="card p-3 h-100" style="border: 1px solid var(--line);">
+            <h5 class="text-center text-light mb-3">Ocupación por Obra (%)</h5>
+            <div style="position: relative; height: 300px; width: 100%;">
+              <canvas id="grafico-ocupacion"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="alert alert-info text-center" style="background: rgba(201, 162, 75, 0.1); border-color: var(--gold); color: var(--gold);">
+        ℹ️ Modo Analítica Activo. Las vistas secundarias se encuentran temporalmente inhabilitadas.
       </div>
     </section>
 
@@ -398,7 +387,6 @@
               <label class="campo-label" for="admin-precio">Precio (USD)</label>
               <input type="number" step="0.01" min="0" id="admin-precio" class="form-control" placeholder="Ej: 15.00" required>
             </div>
-            <!-- Selector de Visibilidad de Cartelera -->
             <div class="col-md-4 mb-3">
               <label class="campo-label" for="admin-visibilidad">Estado en Cartelera</label>
               <select id="admin-visibilidad" class="form-select">
@@ -455,46 +443,9 @@
 
   <!-- Librerías JS Externas -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <!-- Chart.js para el panel de analítica -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 
   <!-- Script Principal de la Aplicación Modular -->
   <script type="module" src="assets/js/app.js"></script>
-
-  <!-- Script de Renderizado para el Gráfico Original -->
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      setTimeout(() => {
-        const ctx = document.getElementById('grafico-analitica-general');
-        if (ctx && !window.graficoAnaliticaInstanciado) {
-          window.graficoAnaliticaInstanciado = new Chart(ctx, {
-            type: 'line',
-            data: {
-              labels: ['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4'],
-              datasets: [{
-                label: 'Asistencia Registrada',
-                data: [150, 230, 180, 290],
-                borderColor: '#c9a24b',
-                backgroundColor: 'rgba(201, 162, 75, 0.15)',
-                borderWidth: 2,
-                fill: true,
-                tension: 0.3
-              }]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: { legend: { labels: { color: '#fff' } } },
-              scales: {
-                x: { ticks: { color: '#aaa' }, grid: { color: '#222' } },
-                y: { ticks: { color: '#aaa' }, grid: { color: '#222' } }
-              }
-            }
-          });
-        }
-      }, 150);
-    });
-  </script>
 
   <!-- Vercel Web Analytics & Speed Insights -->
   <script>
