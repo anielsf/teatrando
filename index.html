@@ -27,53 +27,24 @@
 <body>
 
   <!-- Barra de navegación global -->
-  <nav id="navbar-principal" class="navbar navbar-expand-lg navbar-teatro mb-4">
+  <nav id="navbar-principal" class="navbar navbar-expand-lg navbar-teatro mb-4" style="display: none;">
     <div class="container">
-      <a class="navbar-brand marca-teatro" href="#" data-navigate="vista-analitica">
+      <a class="navbar-brand marca-teatro" href="#" data-navigate="vista-inicio">
         <span class="mascara">🎭</span> TEATRANDO
       </a>
       <div class="d-flex align-items-center flex-wrap gap-2">
         <span class="tasa-bcv-badge" id="indicador-tasa">Tasa BCV: cargando…</span>
-        <button class="btn btn-nav btn-sm active" data-navigate="vista-analitica">Analítica</button>
-        <button class="btn btn-nav btn-sm" data-navigate="vista-cartelera" style="display: none;" disabled>Cartelera</button>
-        <button class="btn btn-nav btn-sm" data-navigate="vista-mi-cuenta" style="display: none;" disabled>Mi cuenta</button>
-        <button class="btn btn-nav btn-sm" id="btn-nav-ultima-entrada" title="Ver la última entrada comprada en este navegador" style="display: none;" disabled>Mi última entrada</button>
-        <button class="btn btn-nav btn-sm" data-navigate="vista-ayuda" style="display: none;" disabled>Ayuda</button>
-        <button class="btn btn-admin btn-sm" id="btn-nav-admin" data-navigate="vista-admin" style="display: none;" disabled>Admin</button>
+        <button class="btn btn-nav btn-sm" data-navigate="vista-cartelera">Cartelera</button>
+        <button class="btn btn-nav btn-sm" data-navigate="vista-mi-cuenta">Mi cuenta</button>
+        <button class="btn btn-nav btn-sm" id="btn-nav-ultima-entrada" title="Ver la última entrada comprada en este navegador">Mi última entrada</button>
+        <button class="btn btn-nav btn-sm" data-navigate="vista-ayuda">Ayuda</button>
+        <button class="btn btn-admin btn-sm" id="btn-nav-admin" data-navigate="vista-admin" style="display: none;">Admin</button>
       </div>
     </div>
   </nav>
 
+  <!-- 1. Vista de Inicio (Hero + Destacados) -->
   <main>
-    <!-- Vista de Analítica Activa por Defecto -->
-    <section id="vista-analitica" class="vista activa container">
-      <h3 class="titulo-seccion mb-4 pb-2">Panel de Analítica y Rendimiento</h3>
-      <div class="row">
-        <!-- Gráfico 1 -->
-        <div class="col-md-6 mb-4">
-          <div class="card p-3 h-100" style="border: 1px solid var(--line);">
-            <h5 class="text-center text-light mb-3">Ventas de Entradas (Mensual)</h5>
-            <div style="position: relative; height: 300px; width: 100%;">
-              <canvas id="grafico-ventas"></canvas>
-            </div>
-          </div>
-        </div>
-        <!-- Gráfico 2 -->
-        <div class="col-md-6 mb-4">
-          <div class="card p-3 h-100" style="border: 1px solid var(--line);">
-            <h5 class="text-center text-light mb-3">Ocupación por Obra (%)</h5>
-            <div style="position: relative; height: 300px; width: 100%;">
-              <canvas id="grafico-ocupacion"></canvas>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="alert alert-info text-center" style="background: rgba(201, 162, 75, 0.1); border-color: var(--gold); color: var(--gold);">
-        ℹ️ Modo Analítica Activo. Las vistas secundarias se encuentran temporalmente inhabilitadas.
-      </div>
-    </section>
-
-    <!-- 1. Vista de Inicio (Hero + Destacados) -->
     <section id="vista-inicio" class="vista container">
       <div class="hero-teatro mb-4">
         <span class="eyebrow">Cartelera teatral · Caracas</span>
@@ -227,7 +198,7 @@
     </section>
 
     <!-- 5. Área de Cliente / Autenticación -->
-    <section id="vista-mi-cuenta" class="vista container">
+    <section id="vista-mi-cuenta" class="vista activa container">
       <!-- Panel de Usuario Autenticado -->
       <div id="bloque-sesion-usuario" style="display: none;">
         <h3 class="titulo-seccion mb-4 pb-2">Área de cliente</h3>
@@ -387,14 +358,7 @@
               <label class="campo-label" for="admin-precio">Precio (USD)</label>
               <input type="number" step="0.01" min="0" id="admin-precio" class="form-control" placeholder="Ej: 15.00" required>
             </div>
-            <div class="col-md-4 mb-3">
-              <label class="campo-label" for="admin-visibilidad">Estado en Cartelera</label>
-              <select id="admin-visibilidad" class="form-select">
-                <option value="true">Público (Visible)</option>
-                <option value="false">Oculto (Borrador)</option>
-              </select>
-            </div>
-            <div class="col-md-4 mb-3">
+            <div class="col-md-8 mb-3">
               <label class="campo-label" for="admin-foto">Póster de la obra</label>
               <input type="file" id="admin-foto" class="form-control" accept="image/*">
             </div>
@@ -405,6 +369,13 @@
             <div class="col-md-6 mb-3">
               <label class="campo-label" for="admin-reparto">Reparto</label>
               <textarea id="admin-reparto" class="form-control" rows="2" placeholder="Actores principales"></textarea>
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="campo-label" for="admin-visibilidad">Estado en Cartelera</label>
+              <select id="admin-visibilidad" class="form-select">
+                <option value="true">Público (Visible)</option>
+                <option value="false">Oculto (Borrador)</option>
+              </select>
             </div>
           </div>
           <button type="submit" class="btn btn-success" id="btn-guardar-obra">Guardar registro</button>
