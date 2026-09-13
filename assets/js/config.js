@@ -114,3 +114,11 @@ export const CONFIG = {
     CACHE_BCV: 'teatrando_cache_bcv'
   }
 };
+
+export const FEATURES = {
+    analytics: true,
+    cartelera: false,
+    seatingMap: false,
+    tickets: false,
+    teatros: false
+};

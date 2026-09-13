@@ -13,6 +13,8 @@ import { checkoutView } from './views/checkoutView.js';
 import { accountView } from './views/accountView.js';
 import { adminView } from './views/adminView.js';
 
+import { FEATURES } from './config.js';
+
 class App {
   constructor() {
     this.navigate = this.navigate.bind(this);
@@ -109,3 +111,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const app = new App();
   app.init();
 });
+
+function navigateTo(viewId) {
+    if (!FEATURES[viewId]) {
+        console.warn(`[Seguridad] La sección ${viewId} se encuentra deshabilitada.`);
+        renderAccessDeniedModal();
+        return;
+    }
+    // Lógica habitual de renderizado de vistas SPA
+    setActiveView(viewId);
+}
