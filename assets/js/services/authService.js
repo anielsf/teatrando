@@ -1,12 +1,12 @@
 /**
  * Servicio de Autenticación, Roles y Suscripciones de Teatrando
- * Conexión con Supabase (Postgres) y fallback de almacenamiento local.
+ * Conexión con el backend propio (Vercel + Postgres/Supabase vía /api/auth
+ * y /api/suscripciones) y fallback de almacenamiento local.
  * Roles: Visitante, Usuario, Crítico, Admin
  * Planes: Plan Básico (Gratis), Plan Bambalinas, Plan Crítico / VIP
  */
 import { CONFIG } from '../config.js';
 import { store } from '../state/store.js';
-import { supabase } from './supabaseClient.js';
 
 export const authService = {
   normalizeEmail(email) {
@@ -31,28 +31,22 @@ export const authService = {
   async login(email, password) {
     const emailNorm = this.normalizeEmail(email);
 
-    // 1. Intentar Supabase
+    // 1. Intentar backend propio (/api/auth)
     try {
-      const { data, error } = await supabase
-        .from('usuarios')
-        .select('id, nombre, email, rol, plan_suscripcion')
-        .eq('email', emailNorm)
-        .eq('password', password)
-        .maybeSingle();
-
-      if (!error && data) {
-        const userSession = {
-          id: data.id,
-          nombre: data.nombre,
-          email: data.email,
-          rol: data.rol,
-          plan: data.plan_suscripcion
-        };
-        this.setSession(userSession);
-        return { success: true, user: userSession };
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'login', email: emailNorm, password })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.usuario) {
+          this.setSession(data.usuario);
+          return { success: true, user: data.usuario };
+        }
       }
     } catch (e) {
-      console.error('Error de conexión con Supabase:', e);
+      console.error('Error de conexión con /api/auth:', e);
     }
 
     // 2. Modo Local Fallback
@@ -103,57 +97,24 @@ export const authService = {
     const emailNorm = this.normalizeEmail(email);
     const nombreLimpio = (nombre || '').toString().trim();
 
-    // 1. Intentar Supabase
+    // 1. Intentar backend propio (/api/auth)
     try {
-      const { data: existing } = await supabase
-        .from('usuarios')
-        .select('id')
-        .eq('email', emailNorm)
-        .maybeSingle();
-
-      if (existing) {
-        return { success: false, message: 'El correo electrónico ya se encuentra registrado.' };
-      }
-
-      let rol = CONFIG.ROLES.USER;
-      let plan = CONFIG.PLANS.BASIC;
-
-      if (emailNorm.includes('admin')) {
-        rol = CONFIG.ROLES.ADMIN;
-        plan = CONFIG.PLANS.CRITIC_VIP;
-      } else if (emailNorm.includes('critico')) {
-        rol = CONFIG.ROLES.CRITIC;
-        plan = CONFIG.PLANS.CRITIC_VIP;
-      }
-
-      const userId = 'USR-' + Math.random().toString(36).substring(2, 9).toUpperCase();
-
-      const { data: inserted, error: insertError } = await supabase
-        .from('usuarios')
-        .insert({
-          id: userId,
-          nombre: nombreLimpio,
-          email: emailNorm,
-          password,
-          rol,
-          plan_suscripcion: plan
-        })
-        .select('id, nombre, email, rol, plan_suscripcion')
-        .single();
-
-      if (!insertError && inserted) {
-        const userSession = {
-          id: inserted.id,
-          nombre: inserted.nombre,
-          email: inserted.email,
-          rol: inserted.rol,
-          plan: inserted.plan_suscripcion
-        };
-        this.setSession(userSession);
-        return { success: true, user: userSession };
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'register', nombre: nombreLimpio, email: emailNorm, password })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.usuario) {
+          this.setSession(data.usuario);
+          return { success: true, user: data.usuario };
+        } else {
+          return { success: false, message: data.message || 'Error en registro' };
+        }
       }
     } catch (e) {
-      console.error('Error de conexión con Supabase:', e);
+      console.error('Error de conexión con /api/auth:', e);
     }
 
     // 2. Modo Local Fallback
@@ -213,31 +174,23 @@ export const authService = {
       nuevoRol = CONFIG.ROLES.ADMIN;
     }
 
-    // 1. Enviar a Supabase
+    // 1. Enviar a backend propio (/api/suscripciones)
     try {
-      await supabase.from('suscripciones').insert({
-        id_usuario: userId,
-        plan: nuevoPlan,
-        precio_usd: precioUSD,
-        precio_ves: precioVES,
-        tasa_bcv: tasaBCV,
-        ref_pago: refPago,
-        estado: 'Activa'
+      await fetch('/api/suscripciones', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          email,
+          plan: nuevoPlan,
+          refPago,
+          precioUSD,
+          precioVES,
+          tasaBCV
+        })
       });
-
-      if (userId !== 'INVITADO' || email) {
-        let updateQuery = supabase
-          .from('usuarios')
-          .update({ plan_suscripcion: nuevoPlan, rol: nuevoRol });
-
-        updateQuery = email
-          ? updateQuery.or(`id.eq.${userId},email.eq.${email}`)
-          : updateQuery.eq('id', userId);
-
-        await updateQuery;
-      }
     } catch (e) {
-      console.error('Error de conexión con Supabase:', e);
+      console.error('Error de conexión con /api/suscripciones:', e);
     }
 
     // 2. Actualizar sesión local
